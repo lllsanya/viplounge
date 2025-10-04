@@ -1,0 +1,3896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出入库管理系统</title>
+    
+    <!-- PWA配置 -->
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="库存管理">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjMzQ5OERCIi8+CjxwYXRoIGQ9Ik05NiA1MkM3MS44IDUyIDUyIDcxLjggNTIgOTZDNTIgMTIwLjIgNzEuOCAxNDAgOTYgMTQwQzEyMC4yIDE0MCAxNDAgMTIwLjIgMTQwIDk2QzE0MCA3MS44IDEyMC4yIDUyIDk2IDUyWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTExNiAxMDhIODhWODBIMTE2VjEwOFoiIGZpbGw9IiMzNDk4REIiLz4KPC9zdmc+">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- 外部资源 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #1abc9c;
+            --dark-color: #34495e;
+            --light-color: #ecf0f1;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 10px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            background-color: var(--light-color);
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tabs li {
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .nav-tabs a {
+            display: block;
+            padding: 15px;
+            text-decoration: none;
+            color: var(--dark-color);
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .nav-tabs a:hover, .nav-tabs a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-info {
+            background-color: var(--info-color);
+        }
+        
+        .btn-info:hover {
+            background-color: #16a085;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table th {
+            background-color: var(--light-color);
+        }
+        
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .alert-warning {
+            background-color: #fde7e7;
+            color: var(--danger-color);
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .alert-info {
+            background-color: #e7f4fd;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            color: #777;
+        }
+        
+        .stat-card p {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .low-stock {
+            color: var(--danger-color) !important;
+            font-weight: bold;
+        }
+        
+        .expiry-warning {
+            background-color: #fff3cd !important;
+        }
+        
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 100%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-color) 100%);
+            padding: 15px;
+        }
+        
+        .login-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            max-width: 100%;
+        }
+        
+        .login-form h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+        }
+        
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .category-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .category-filter button {
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .badge-success {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .badge-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .badge-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .login-loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .btn-undo {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-undo:hover {
+            background-color: #e67e22;
+        }
+        
+        /* 批次选择模态框样式 */
+        .batch-option {
+            transition: all 0.2s ease;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        
+        .batch-option:hover {
+            background-color: #f8f9fa;
+            border-color: #3498db;
+        }
+        
+        .batch-option.selected {
+            border-color: #3498db;
+            background-color: #e7f4fd;
+        }
+        
+        .batch-option input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        /* 响应式设计优化 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 0.8rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .nav-tabs li {
+                flex: none;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toolbar > div {
+                width: 100%;
+            }
+            
+            .toolbar button {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .user-panel {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            .tab-content {
+                padding: 15px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+            
+            .form-group {
+                margin-bottom: 12px;
+            }
+            
+            input, select, textarea {
+                padding: 12px;
+                font-size: 16px; /* 防止iOS缩放 */
+            }
+            
+            button {
+                padding: 12px 15px;
+            }
+            
+            .category-filter {
+                justify-content: center;
+            }
+            
+            .category-filter button {
+                flex: 1;
+                min-width: 100px;
+            }
+            
+            .expiry-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .batch-selection-modal .modal-content {
+                width: 95%;
+                margin: 10px;
+                max-height: 80vh;
+            }
+            
+            .batch-option {
+                padding: 8px;
+            }
+            
+            /* 手机端批次选择优化 */
+            .batch-radio-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .batch-radio-details {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .login-form {
+                padding: 20px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-card p {
+                font-size: 20px;
+            }
+            
+            .nav-tabs a {
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            h3 {
+                font-size: 1.1rem;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .expiry-section {
+            margin-bottom: 25px;
+        }
+        
+        .expiry-card {
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        
+        .expiry-header {
+            padding: 15px;
+            background-color: #fff3cd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-left: 4px solid #ffc107;
+            transition: all 0.2s ease;
+        }
+        
+        .expiry-header:hover {
+            background-color: #ffeaa7;
+        }
+        
+        .expiry-header.danger {
+            background-color: #fde7e7;
+            border-left-color: #e74c3c;
+        }
+        
+        .expiry-header.danger:hover {
+            background-color: #f8d7da;
+        }
+        
+        .expiry-title {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .expiry-count {
+            background-color: #ffc107;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        
+        .expiry-count.danger {
+            background-color: #e74c3c;
+        }
+        
+        .expiry-content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+        
+        .expiry-content.expanded {
+            padding: 15px;
+            max-height: 500px;
+        }
+        
+        .expiry-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .expiry-item:last-child {
+            border-bottom: none;
+        }
+        
+        .expiry-days {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .expiry-days.warning {
+            color: #f39c12;
+        }
+        
+        /* 删除确认模态框样式 */
+        .delete-confirm-modal .modal-content {
+            width: 400px;
+        }
+        
+        .delete-options {
+            margin: 15px 0;
+        }
+        
+        .delete-option {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .delete-option:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .delete-option.selected {
+            border-color: var(--primary-color);
+            background-color: #e7f4fd;
+        }
+        
+        .delete-option input {
+            width: auto;
+            margin-right: 8px;
+        }
+        
+        /* 新增样式：撤销按钮状态 */
+        .btn-undo:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .undo-processing {
+            position: relative;
+            color: transparent;
+        }
+        
+        .undo-processing::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* 移动设备优化 */
+        .mobile-optimized {
+            touch-action: manipulation;
+        }
+        
+        /* 表格响应式包装器 */
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        /* PWA安装提示按钮 */
+        #install-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+        }
+        
+        /* PWA离线提示 */
+        #offline-status {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: var(--warning-color);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            z-index: 2000;
+            display: none;
+        }
+        
+        /* 新增样式：批次管理 */
+        .batch-section {
+            margin-top: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .batch-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .batch-content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+        
+        .batch-content.expanded {
+            padding: 15px;
+            max-height: 500px;
+        }
+        
+        .batch-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .batch-item:last-child {
+            border-bottom: none;
+        }
+        
+        .batch-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        /* 过期商品页面样式 */
+        .expiry-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .expiry-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .expiry-tab.active {
+            border-bottom-color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .batch-expiry-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .batch-quantity {
+            font-weight: bold;
+        }
+        
+        .expiry-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-expired {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .status-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .status-normal {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        /* 新增样式：商品名称重复检查 */
+        .validation-message {
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .validation-error {
+            color: var(--danger-color);
+        }
+        
+        .validation-success {
+            color: var(--secondary-color);
+        }
+        
+        .input-error {
+            border-color: var(--danger-color) !important;
+        }
+        
+        .input-success {
+            border-color: var(--secondary-color) !important;
+        }
+        
+        /* 新增样式：快速提示 */
+        .quick-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 3000;
+            max-width: 400px;
+            text-align: center;
+            animation: slideDown 0.3s ease, slideUp 0.3s ease 1.7s forwards;
+        }
+        
+        .quick-alert.success {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .quick-alert.error {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .quick-alert.warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .quick-alert.info {
+            background-color: var(--info-color);
+            color: white;
+        }
+        
+        @keyframes slideDown {
+            from {
+                top: -100px;
+                opacity: 0;
+            }
+            to {
+                top: 20px;
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                top: 20px;
+                opacity: 1;
+            }
+            to {
+                top: -100px;
+                opacity: 0;
+            }
+        }
+        
+        /* 新增样式：备注列 */
+        .description-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        @media (max-width: 768px) {
+            .description-cell {
+                max-width: 120px;
+            }
+        }
+        
+        /* 新增样式：出库表单中的批次选择区域 */
+        .batch-selection-area {
+            margin-top: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .batch-selection-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .batch-selection-content {
+            padding: 15px;
+        }
+        
+        .batch-radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .batch-radio-option:hover {
+            background-color: #f8f9fa;
+            border-color: #3498db;
+        }
+        
+        .batch-radio-option.selected {
+            border-color: #3498db;
+            background-color: #e7f4fd;
+        }
+        
+        .batch-radio-option input[type="radio"] {
+            margin-right: 10px;
+        }
+        
+        .batch-radio-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .batch-radio-details {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .batch-radio-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .batch-radio-details {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+
+        /* 新增样式：商品名称自动完成下拉框 */
+        .autocomplete-container {
+            position: relative;
+        }
+        
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .autocomplete-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-category {
+            font-size: 12px;
+            color: #777;
+            margin-left: 8px;
+        }
+
+        /* 新增样式：销毁确认模态框层级优化 */
+        #destroy-batch-modal {
+            z-index: 2000;
+        }
+
+        /* 新增样式：有效期显示优化 */
+        .no-expiry {
+            color: #777;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="mobile-optimized">
+    <!-- PWA离线状态提示 -->
+    <div id="offline-status">
+        <i class="fas fa-wifi"></i> 您当前处于离线状态，部分功能可能受限
+    </div>
+
+    <!-- PWA安装提示按钮 -->
+    <button id="install-button" class="btn-success">
+        <i class="fas fa-download"></i> 安装应用
+    </button>
+
+    <!-- 快速提示容器 -->
+    <div id="quick-alert-container"></div>
+
+    <!-- 登录页面 -->
+    <div id="login-page" class="login-container">
+        <div class="login-form">
+            <h1><i class="fas fa-boxes"></i> 出入库管理系统</h1>
+            <p style="text-align: center; margin-bottom: 20px;"></p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="employee-id">员工工号</label>
+                    <input type="text" id="employee-id" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="login-btn" class="btn-success" style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> 员工登录
+                    </button>
+                </div>
+            </form>
+            <div class="login-loading" id="login-loading">
+                <div class="spinner"></div>
+                <p>正在验证身份...</p>
+            </div>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 员工工号: <br>
+                登录密码: 123456
+            </div>
+            <div id="login-status" class="alert"></div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div id="app" class="hidden">
+        <div class="container">
+            <header>
+                <h1><i class="fas fa-boxes"></i> 出入库管理系统</h1>
+                <div class="user-panel">
+                    <div class="user-info">
+                        <div id="user-name">员工</div>
+                        <div id="user-role" class="user-role">工号: </div>
+                    </div>
+                    <button id="logout-btn" class="btn-sm btn-danger"><i class="fas fa-sign-out-alt"></i> 退出</button>
+                </div>
+            </header>
+            
+            <ul class="nav-tabs">
+                <li><a href="#dashboard" class="active">库存概览</a></li>
+                <li><a href="#products">商品管理</a></li>
+                <li><a href="#inbound">入库管理</a></li>
+                <li><a href="#outbound">出库管理</a></li>
+                <li><a href="#expired-products">过期商品</a></li>
+                <li><a href="#history">操作记录</a></li>
+            </ul>
+            
+            <!-- 库存概览 -->
+            <div id="dashboard" class="tab-content active">
+                <h2>库存概览</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>商品种类</h3>
+                        <p id="total-products">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>库存总量</h3>
+                        <p id="total-inventory">0</p>
+                    </div>
+                     <div class="stat-card">
+                        <h3>低库存商品</h3>
+                        <p id="low-stock-count">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>库存预警商品</h3>
+                        <p id="warning-products-count">0</p>
+                    </div>
+                </div>
+                
+                <h2>库存预警</h2>
+                <div id="low-stock-alerts"></div>
+                
+                <h2>最近操作</h2>
+                <div id="recent-activities"></div>
+            </div>
+            
+            <!-- 商品管理 -->
+            <div id="products" class="tab-content">
+                <h2>商品管理</h2>
+                <div class="toolbar">
+                    <div>
+                        <button id="add-product-btn" class="btn-success"><i class="fas fa-plus"></i> 添加商品</button>
+                    </div>
+                    <div>
+                        <input type="text" id="product-search" placeholder="搜索商品...">
+                    </div>
+                </div>
+
+                <div class="category-filter">
+                    <button class="active" data-category="all">全部</button>
+                    <button data-category="甜品">甜品</button>
+                    <button data-category="服务用品">服务用品</button>
+                    <button data-category="食品">食品</button>
+                    <button data-category="饮品">饮品</button>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table id="products-table">
+                        <thead>
+                            <tr>
+                                <th>商品名称</th>
+                                <th>分类</th>
+                                <th>库存数量</th>
+                                <th>操作</th>
+                                <th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-list">
+                            <!-- 商品列表将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 入库管理 -->
+            <div id="inbound" class="tab-content">
+                <h2>入库管理</h2>
+                <div class="card">
+                    <form id="inbound-form">
+                        <div class="form-group">
+                            <label for="inbound-product">选择商品</label>
+                            <select id="inbound-product" required>
+                                <option value="">-- 选择商品 --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="inbound-quantity">入库数量</label>
+                            <input type="number" id="inbound-quantity" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="inbound-expiry-date">有效期至</label>
+                            <input type="date" id="inbound-expiry-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="inbound-notes">备注</label>
+                            <textarea id="inbound-notes" placeholder="可填写入库原因、供应商等信息"></textarea>
+                        </div>
+                        <button type="submit" class="btn-success"><i class="fas fa-arrow-down"></i> 确认入库</button>
+                    </form>
+                </div>
+                
+                <h3>入库记录</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>商品</th>
+                                <th>数量</th>
+                                <th>有效期</th>
+                                <th>操作员工</th>
+                                <th>备注</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inbound-history">
+                            <!-- 入库记录将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 出库管理 -->
+            <div id="outbound" class="tab-content">
+                <h2>出库管理</h2>
+                <div class="card">
+                    <form id="outbound-form">
+                        <div class="form-group">
+                            <label for="outbound-product">选择商品</label>
+                            <select id="outbound-product" required>
+                                <option value="">-- 选择商品 --</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 批次选择区域 -->
+                        <div id="batch-selection-area" class="batch-selection-area">
+                            <div class="batch-selection-header">
+                                <span>批次选择</span>
+                                <span id="batch-total-quantity">总计: 0</span>
+                            </div>
+                            <div class="batch-selection-content">
+                                <div id="batch-radio-options">
+                                    <!-- 批次单选按钮将在这里动态生成 -->
+                                </div>
+                                <div id="no-batches-message" class="alert alert-info" style="display: none;">
+                                    <i class="fas fa-info-circle"></i> 该商品暂无批次信息
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="outbound-quantity">出库数量</label>
+                            <input type="number" id="outbound-quantity" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="outbound-reason">出库原因</label>
+                            <select id="outbound-reason">
+                                <option value="销售">销售</option>
+                                <option value="损耗">损耗</option>
+                                <option value="调拨">调拨</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="outbound-notes">备注</label>
+                            <textarea id="outbound-notes" placeholder="可填写出库详情"></textarea>
+                        </div>
+                        <button type="submit" class="btn-warning"><i class="fas fa-arrow-up"></i> 确认出库</button>
+                    </form>
+                </div>
+                
+                <h3>出库记录</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>商品</th>
+                                <th>数量</th>
+                                <th>操作员工</th>
+                                <th>原因</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outbound-history">
+                            <!-- 出库记录将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 过期商品页面 -->
+            <div id="expired-products" class="tab-content">
+                <h2>过期商品管理</h2>
+                
+                <div class="expiry-tabs">
+                    <div class="expiry-tab active" data-tab="expired">已过期商品</div>
+                    <div class="expiry-tab" data-tab="expiring">即将过期商品</div>
+                </div>
+                
+                <div id="expired-tab-content" class="expiry-tab-content">
+                    <div class="toolbar">
+                        <div>
+                            <button id="destroy-all-expired-btn" class="btn-danger">
+                                <i class="fas fa-trash"></i> 销毁所有过期批次
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>商品名称</th>
+                                    <th>分类</th>
+                                    <th>过期批次</th>
+                                    <th>过期天数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expired-products-list">
+                                <!-- 过期商品列表将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="expiring-tab-content" class="expiry-tab-content hidden">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>商品名称</th>
+                                    <th>分类</th>
+                                    <th>即将过期批次</th>
+                                    <th>剩余天数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expiring-products-list">
+                                <!-- 即将过期商品列表将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作记录 -->
+            <div id="history" class="tab-content">
+                <h2>操作记录</h2>
+                <div class="card">
+                    <div class="form-group">
+                        <label for="history-product-search">商品名称</label>
+                        <input type="text" id="history-product-search" placeholder="输入商品名称筛选...">
+                    </div>
+                    <div class="form-group">
+                        <label for="history-filter">筛选记录</label>
+                        <select id="history-filter">
+                            <option value="all">所有记录</option>
+                            <option value="inbound">入库记录</option>
+                            <option value="outbound">出库记录</option>
+                        </select>
+                    </div>
+                    <button id="clear-history-filter" class="btn-info">清除筛选</button>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>类型</th>
+                                <th>商品</th>
+                                <th>数量</th>
+                                <th>有效期</th>
+                                <th>操作员工</th>
+                                <th>详情</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-history">
+                            <!-- 所有记录将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加商品模态框 -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="product-modal-title">添加商品</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="product-form">
+                <div class="form-group autocomplete-container">
+                    <label for="product-name">商品名称</label>
+                    <input type="text" id="product-name" required>
+                    <div id="product-name-suggestions" class="autocomplete-dropdown"></div>
+                    <div id="product-name-validation" class="validation-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="product-category">商品分类</label>
+                    <select id="product-category" required>
+                        <option value="">-- 选择分类 --</option>
+                        <option value="甜品">甜品</option>
+                        <option value="服务用品">服务用品</option>
+                        <option value="食品">食品</option>
+                        <option value="其他">其他</option>
+                        <option value="饮品">饮品</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="product-min-stock">最低库存预警</label>
+                    <input type="number" id="product-min-stock" min="1" value="5" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-description">商品描述</label>
+                    <textarea id="product-description" placeholder="可选"></textarea>
+                </div>
+                <button type="submit" class="btn-success" id="product-submit-btn">保存</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑入库记录模态框 -->
+    <div id="edit-inbound-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>编辑入库记录</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="edit-inbound-form">
+                <input type="hidden" id="edit-inbound-id">
+                <div class="form-group">
+                    <label for="edit-inbound-product">商品</label>
+                    <input type="text" id="edit-inbound-product" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="edit-inbound-quantity">入库数量</label>
+                    <input type="number" id="edit-inbound-quantity" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-inbound-expiry-date">有效期至</label>
+                    <input type="date" id="edit-inbound-expiry-date">
+                </div>
+                <div class="form-group">
+                    <label for="edit-inbound-notes">备注</label>
+                    <textarea id="edit-inbound-notes" placeholder="可填写入库原因、供应商等信息"></textarea>
+                </div>
+                <button type="submit" class="btn-success">保存修改</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑出库记录模态框 -->
+    <div id="edit-outbound-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>编辑出库记录</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="edit-outbound-form">
+                <input type="hidden" id="edit-outbound-id">
+                <div class="form-group">
+                    <label for="edit-outbound-product">商品</label>
+                    <input type="text" id="edit-outbound-product" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="edit-outbound-quantity">出库数量</label>
+                    <input type="number" id="edit-outbound-quantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-outbound-reason">出库原因</label>
+                    <select id="edit-outbound-reason">
+                        <option value="销售">销售</option>
+                        <option value="损耗">损耗</option>
+                        <option value="调拨">调拨</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-outbound-notes">备注</label>
+                    <textarea id="edit-outbound-notes" placeholder="可填写出库详情"></textarea>
+                </div>
+                <button type="submit" class="btn-warning">保存修改</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="delete-confirm-modal" class="modal delete-confirm-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>删除商品确认</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="form-group">
+                <p>此商品有相关的交易记录，请选择删除方式：</p>
+                <div class="delete-options">
+                    <div class="delete-option selected" data-option="cascade">
+                        <input type="radio" id="delete-cascade" name="delete-option" checked>
+                        <label for="delete-cascade">同时删除相关交易记录</label>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            此操作将删除该商品的所有入库和出库记录，无法撤销
+                        </div>
+                    </div>
+                    <div class="delete-option" data-option="set-null">
+                        <input type="radio" id="delete-set-null" name="delete-option">
+                        <label for="delete-set-null">保留交易记录，仅删除商品</label>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            交易记录中的商品名称将显示为"已删除商品"
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-delete" class="btn-warning">取消</button>
+                <button id="confirm-delete" class="btn-danger">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 销毁批次确认模态框 -->
+    <div id="destroy-batch-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>销毁过期批次</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="form-group">
+                <p id="destroy-batch-message">确定要销毁这个过期批次吗？此操作不可撤销。</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-destroy" class="btn-warning">取消</button>
+                <button id="confirm-destroy" class="btn-danger">确认销毁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批次选择模态框 -->
+    <div id="batch-selection-modal" class="modal batch-selection-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="batch-selection-title">选择出库批次</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="form-group">
+                <p id="batch-selection-message">请选择要从哪个批次出库：</p>
+                <div id="batch-selection-list" style="max-height: 300px; overflow-y: auto; margin: 15px 0;">
+                    <!-- 批次选项将动态生成 -->
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-batch-select" class="btn-warning">取消</button>
+                <button id="confirm-batch-select" class="btn-success">确认出库</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase配置
+        const SUPABASE_URL = 'https://oxyzreazbkysccskjlwk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eXpyZWF6Ymt5c2Njc2tqbHdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0MjIyMDQsImV4cCI6MjA3Mzk5ODIwNH0.UFDCL7YqxBpFFZJfc2LMXdph29f4GEJG4Xx0T_rovgU';
+        
+        // 初始化Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 员工数据
+        const employees = {
+            '124391': { name: '刘晓楠', password: '123456' },
+            '124576': { name: '刘玥', password: '123456' },
+            '124022': { name: '陈会慧', password: '123456' },
+            '3792': { name: '符祥伟', password: '123456' }
+        };
+        
+        // 应用状态
+        let currentUser = null;
+        let inventoryItems = [];
+        let batches = [];
+        let transactions = [];
+        let transactionsTableExists = false;
+        let productToDelete = null;
+        let batchToDestroy = null;
+        
+        // PWA相关变量
+        let deferredPrompt;
+        
+        // DOM元素
+        const loginPage = document.getElementById('login-page');
+        const app = document.getElementById('app');
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const loginStatus = document.getElementById('login-status');
+        const loginLoading = document.getElementById('login-loading');
+        const userName = document.getElementById('user-name');
+        const userRole = document.getElementById('user-role');
+        const logoutBtn = document.getElementById('logout-btn');
+        const installButton = document.getElementById('install-button');
+        const offlineStatus = document.getElementById('offline-status');
+        
+        // 显示快速提示信息
+        function showQuickAlert(message, type) {
+            const container = document.getElementById('quick-alert-container');
+            const alertEl = document.createElement('div');
+            alertEl.className = `quick-alert ${type}`;
+            alertEl.innerHTML = `<i class="fas fa-${getAlertIcon(type)}"></i> ${message}`;
+            
+            container.appendChild(alertEl);
+            
+            // 2秒后自动移除
+            setTimeout(() => {
+                if (alertEl.parentNode) {
+                    alertEl.remove();
+                }
+            }, 2000);
+        }
+        
+        // 获取提示图标
+        function getAlertIcon(type) {
+            switch(type) {
+                case 'success': return 'check-circle';
+                case 'error': return 'exclamation-circle';
+                case 'warning': return 'exclamation-triangle';
+                case 'info': return 'info-circle';
+                default: return 'info-circle';
+            }
+        }
+        
+        // 显示提示信息
+        function showAlert(message, type, element = null) {
+            if (element) {
+                const alertEl = document.createElement('div');
+                alertEl.className = `alert alert-${type}`;
+                alertEl.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i> ${message}`;
+                
+                element.innerHTML = '';
+                element.appendChild(alertEl);
+                
+                setTimeout(() => {
+                    if (alertEl.parentNode) {
+                        alertEl.remove();
+                    }
+                }, 2000);
+            } else {
+                showQuickAlert(message, type);
+            }
+        }
+        
+        // 安全地设置元素内容
+        function safeSetTextContent(elementId, text) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = text;
+            } else {
+                console.warn(`元素 ${elementId} 不存在`);
+            }
+        }
+        
+        // 检查商品名称是否重复
+        function checkProductNameDuplicate(name, excludeId = null) {
+            if (!name || name.trim() === '') {
+                return { isDuplicate: false, existingProduct: null };
+            }
+            
+            const normalizedName = name.trim().toLowerCase();
+            const existingProduct = inventoryItems.find(item => {
+                if (excludeId && item.id == excludeId) {
+                    return false;
+                }
+                return item.name.toLowerCase() === normalizedName;
+            });
+            
+            return {
+                isDuplicate: !!existingProduct,
+                existingProduct: existingProduct || null
+            };
+        }
+        
+        // 商品名称自动完成功能
+        function setupProductNameAutocomplete() {
+            const productNameInput = document.getElementById('product-name');
+            const suggestionsContainer = document.getElementById('product-name-suggestions');
+            
+            if (!productNameInput || !suggestionsContainer) return;
+            
+            productNameInput.addEventListener('input', function() {
+                const searchTerm = this.value.trim().toLowerCase();
+                
+                // 清空之前的建议
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = 'none';
+                
+                if (searchTerm.length < 1) {
+                    return;
+                }
+                
+                // 查找匹配的商品
+                const matches = inventoryItems.filter(item => 
+                    item.name.toLowerCase().includes(searchTerm)
+                );
+                
+                if (matches.length > 0) {
+                    // 显示匹配的商品建议
+                    matches.forEach(product => {
+                        const suggestionItem = document.createElement('div');
+                        suggestionItem.className = 'autocomplete-item';
+                        suggestionItem.innerHTML = `
+                            ${product.name}
+                            <span class="autocomplete-category">${product.category}</span>
+                        `;
+                        
+                        suggestionItem.addEventListener('click', function() {
+                            productNameInput.value = product.name;
+                            suggestionsContainer.style.display = 'none';
+                            
+                            // 触发验证
+                            const event = new Event('input', { bubbles: true });
+                            productNameInput.dispatchEvent(event);
+                        });
+                        
+                        suggestionsContainer.appendChild(suggestionItem);
+                    });
+                    
+                    suggestionsContainer.style.display = 'block';
+                }
+            });
+            
+            // 点击外部时隐藏建议
+            document.addEventListener('click', function(e) {
+                if (!productNameInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            // 按ESC键隐藏建议
+            productNameInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        // 实时验证商品名称
+        function setupProductNameValidation() {
+            const productNameInput = document.getElementById('product-name');
+            const validationMessage = document.getElementById('product-name-validation');
+            
+            if (!productNameInput || !validationMessage) return;
+            
+            productNameInput.addEventListener('input', function() {
+                const name = this.value.trim();
+                const editingId = document.getElementById('product-form').dataset.editingId;
+                
+                if (name === '') {
+                    validationMessage.style.display = 'none';
+                    this.classList.remove('input-error', 'input-success');
+                    return;
+                }
+                
+                const result = checkProductNameDuplicate(name, editingId);
+                
+                if (result.isDuplicate) {
+                    validationMessage.textContent = `商品名称重复: "${result.existingProduct.name}" (分类: ${result.existingProduct.category})`;
+                    validationMessage.className = 'validation-message validation-error';
+                    validationMessage.style.display = 'block';
+                    this.classList.add('input-error');
+                    this.classList.remove('input-success');
+                } else {
+                    validationMessage.textContent = '商品名称可用';
+                    validationMessage.className = 'validation-message validation-success';
+                    validationMessage.style.display = 'block';
+                    this.classList.add('input-success');
+                    this.classList.remove('input-error');
+                }
+            });
+            
+            productNameInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    validationMessage.style.display = 'none';
+                }, 1500);
+            });
+        }
+        
+        // 登录功能
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const employeeId = document.getElementById('employee-id').value.trim();
+            const password = document.getElementById('password').value;
+            
+            loginLoading.style.display = 'block';
+            loginBtn.disabled = true;
+            
+            try {
+                if (employees[employeeId] && employees[employeeId].password === password) {
+                    currentUser = {
+                        id: employeeId,
+                        name: employees[employeeId].name,
+                        role: '员工'
+                    };
+                    
+                    showAlert(`欢迎 ${currentUser.name}!`, 'success', loginStatus);
+                    
+                    userName.textContent = currentUser.name;
+                    userRole.textContent = `工号: ${currentUser.id}`;
+                    
+                    loginPage.classList.add('hidden');
+                    app.classList.remove('hidden');
+                    
+                    await loadInventory();
+                    await loadBatches();
+                    await checkTransactionsTable();
+                    if (transactionsTableExists) {
+                        await loadTransactions();
+                    }
+                    updateDashboard();
+                    renderExpiredProducts();
+                } else {
+                    throw new Error('工号或密码错误');
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                showAlert('登录失败: ' + error.message, 'error', loginStatus);
+            } finally {
+                loginLoading.style.display = 'none';
+                loginBtn.disabled = false;
+            }
+        });
+        
+        // 退出功能
+        logoutBtn.addEventListener('click', async () => {
+            currentUser = null;
+            app.classList.add('hidden');
+            loginPage.classList.remove('hidden');
+            loginForm.reset();
+            showAlert('已退出登录', 'info', loginStatus);
+        });
+        
+        // 检查transactions表是否存在
+        async function checkTransactionsTable() {
+            try {
+                const { error } = await supabase
+                    .from('transactions')
+                    .select('count', { count: 'exact', head: true })
+                    .limit(1);
+                
+                if (error) {
+                    if (error.message.includes('does not exist')) {
+                        transactionsTableExists = false;
+                        console.log('transactions表不存在，将使用本地存储');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    transactionsTableExists = true;
+                    console.log('transactions表存在');
+                }
+            } catch (error) {
+                console.error('检查表存在错误:', error);
+                transactionsTableExists = false;
+            }
+        }
+        
+        // 加载库存
+        async function loadInventory() {
+            if (!currentUser) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('inventory')
+                    .select('*')
+                    .order('updated_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                inventoryItems = data || [];
+                renderProducts();
+                populateProductSelects();
+                
+            } catch (error) {
+                console.error('加载库存错误:', error);
+                showAlert('加载库存失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 加载批次数据
+        async function loadBatches() {
+            if (!currentUser) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('batches')
+                    .select('*')
+                    .order('expiry_date', { ascending: true });
+                
+                if (error) {
+                    if (error.message.includes('does not exist')) {
+                        console.log('batches表不存在，将创建表');
+                        await createBatchesTable();
+                        batches = [];
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    batches = data || [];
+                }
+                
+            } catch (error) {
+                console.error('加载批次错误:', error);
+                if (error.message.includes('does not exist')) {
+                    await createBatchesTable();
+                    batches = [];
+                } else {
+                    showAlert('加载批次数据失败: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // 创建批次表
+        async function createBatchesTable() {
+            try {
+                console.log('请在Supabase控制台中创建batches表');
+            } catch (error) {
+                console.error('创建批次表错误:', error);
+            }
+        }
+        
+        // 保存批次到Supabase
+        async function saveBatchToSupabase(batch) {
+            try {
+                const { data, error } = await supabase
+                    .from('batches')
+                    .insert([batch])
+                    .select();
+                
+                if (error) throw error;
+                
+                return data[0];
+            } catch (error) {
+                console.error('保存批次错误:', error);
+                if (error.message.includes('does not exist')) {
+                    batch.id = Date.now().toString();
+                    batches.push(batch);
+                    return batch;
+                }
+                return null;
+            }
+        }
+        
+        // 更新批次到Supabase
+        async function updateBatchInSupabase(batchId, updates) {
+            try {
+                const { data, error } = await supabase
+                    .from('batches')
+                    .update(updates)
+                    .eq('id', batchId)
+                    .select();
+                
+                if (error) throw error;
+                
+                return data[0];
+            } catch (error) {
+                console.error('更新批次错误:', error);
+                return null;
+            }
+        }
+        
+        // 删除批次从Supabase
+        async function deleteBatchFromSupabase(batchId) {
+            try {
+                const { error } = await supabase
+                    .from('batches')
+                    .delete()
+                    .eq('id', batchId);
+                
+                if (error) throw error;
+                
+                return true;
+            } catch (error) {
+                console.error('删除批次错误:', error);
+                return false;
+            }
+        }
+        
+        // 加载交易记录
+        async function loadTransactions() {
+            if (!currentUser || !transactionsTableExists) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                transactions = data || [];
+                renderTransactionHistory();
+                
+            } catch (error) {
+                console.error('加载交易记录错误:', error);
+                if (error.message.includes('does not exist')) {
+                    transactionsTableExists = false;
+                    console.log('transactions表不存在，将使用本地存储');
+                } else {
+                    showAlert('加载交易记录失败: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // 保存交易记录到Supabase
+        async function saveTransactionToSupabase(transaction) {
+            if (!transactionsTableExists) return null;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .insert([transaction])
+                    .select();
+                
+                if (error) throw error;
+                
+                return data[0];
+            } catch (error) {
+                console.error('保存交易记录错误:', error);
+                if (error.message.includes('does not exist')) {
+                    transactionsTableExists = false;
+                }
+                return null;
+            }
+        }
+        
+        // 更新交易记录到Supabase
+        async function updateTransactionInSupabase(transactionId, updates) {
+            if (!transactionsTableExists) return null;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .update(updates)
+                    .eq('id', transactionId)
+                    .select();
+                
+                if (error) throw error;
+                
+                return data[0];
+            } catch (error) {
+                console.error('更新交易记录错误:', error);
+                return null;
+            }
+        }
+        
+        // 渲染商品列表
+        function renderProducts() {
+            const productsList = document.getElementById('products-list');
+            if (!productsList) return;
+            
+            productsList.innerHTML = '';
+            
+            if (inventoryItems.length === 0) {
+                productsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无商品数据</td></tr>';
+                return;
+            }
+            
+            inventoryItems.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const productBatches = batches.filter(batch => batch.product_id === item.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.category}</td>
+                    <td class="${totalQuantity < (item.min_stock || 5) ? 'low-stock' : ''}">${totalQuantity}</td>
+                    <td>
+                        <button class="btn-sm btn-info btn-view-batches" data-id="${item.id}">查看批次</button>
+                        <button class="btn-sm btn-edit" data-id="${item.id}">编辑</button>
+                        <button class="btn-sm btn-danger btn-delete" data-id="${item.id}">删除</button>
+                    </td>
+                    <td class="description-cell">${item.description || '-'}</td>
+                `;
+                
+                productsList.appendChild(row);
+            });
+            
+            addProductEventListeners();
+        }
+        
+        // 填充商品选择框
+        function populateProductSelects() {
+            const inboundSelect = document.getElementById('inbound-product');
+            const outboundSelect = document.getElementById('outbound-product');
+            
+            if (!inboundSelect || !outboundSelect) return;
+            
+            while (inboundSelect.options.length > 1) inboundSelect.remove(1);
+            while (outboundSelect.options.length > 1) outboundSelect.remove(1);
+            
+            inventoryItems.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.name}`;
+                
+                inboundSelect.appendChild(option.cloneNode(true));
+                outboundSelect.appendChild(option);
+            });
+        }
+        
+        // 显示选中商品的批次信息
+        function showProductBatches(productId) {
+            const batchSelectionArea = document.getElementById('batch-selection-area');
+            const batchRadioOptions = document.getElementById('batch-radio-options');
+            const noBatchesMessage = document.getElementById('no-batches-message');
+            const batchTotalQuantity = document.getElementById('batch-total-quantity');
+            
+            if (!productId) {
+                batchSelectionArea.style.display = 'none';
+                return;
+            }
+            
+            const product = inventoryItems.find(item => item.id == productId);
+            if (!product) {
+                batchSelectionArea.style.display = 'none';
+                return;
+            }
+            
+            const productBatches = batches.filter(batch => batch.product_id == productId && batch.quantity > 0);
+            const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+            
+            batchTotalQuantity.textContent = `总计: ${totalQuantity}`;
+            
+            if (productBatches.length === 0) {
+                batchRadioOptions.innerHTML = '';
+                noBatchesMessage.style.display = 'block';
+                batchSelectionArea.style.display = 'block';
+                return;
+            }
+            
+            noBatchesMessage.style.display = 'none';
+            batchRadioOptions.innerHTML = '';
+            
+            productBatches.forEach((batch, index) => {
+                // 检查是否没有有效期
+                const hasNoExpiry = !batch.expiry_date || batch.expiry_date === '1970-01-01';
+                
+                let expiryInfo = '';
+                let statusClass = 'status-normal';
+                let statusText = '正常';
+                let daysUntilExpiry = null;
+                
+                if (!hasNoExpiry) {
+                    const expiryDate = new Date(batch.expiry_date);
+                    const today = new Date();
+                    daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysUntilExpiry < 0) {
+                        statusClass = 'status-expired';
+                        statusText = '已过期';
+                    } else if (daysUntilExpiry <= 7) {
+                        statusClass = 'status-warning';
+                        statusText = '即将过期';
+                    }
+                    
+                    expiryInfo = `有效期: ${expiryDate.toLocaleDateString('zh-CN')}`;
+                } else {
+                    expiryInfo = '有效期: <span class="no-expiry">无</span>';
+                }
+                
+                const option = document.createElement('div');
+                option.className = 'batch-radio-option';
+                if (index === 0) {
+                    option.classList.add('selected');
+                }
+                
+                option.innerHTML = `
+                    <input type="radio" id="batch-radio-${batch.id}" name="selected-batch" value="${batch.id}" ${index === 0 ? 'checked' : ''}>
+                    <label for="batch-radio-${batch.id}" style="width: 100%; cursor: pointer;">
+                        <div class="batch-radio-info">
+                            <div class="batch-radio-details">
+                                <div>
+                                    <strong>${expiryInfo}</strong>
+                                    ${!hasNoExpiry ? `<span class="expiry-status ${statusClass}" style="margin-left: 10px;">${statusText}</span>` : ''}
+                                </div>
+                                <div>库存: <strong>${batch.quantity}</strong></div>
+                            </div>
+                            ${!hasNoExpiry && daysUntilExpiry < 0 ? 
+                                '<div style="color: #e74c3c; font-size: 12px; margin-top: 4px;">⚠️ 此批次已过期</div>' : 
+                                !hasNoExpiry && daysUntilExpiry <= 7 ? 
+                                `<div style="color: #f39c12; font-size: 12px; margin-top: 4px;">⚠️ 还有 ${daysUntilExpiry} 天过期</div>` : 
+                                `<div style="color: #27ae60; font-size: 12px; margin-top: 4px;">✓ 库存正常</div>`
+                            }
+                        </div>
+                    </label>
+                `;
+                
+                batchRadioOptions.appendChild(option);
+            });
+            
+            // 添加批次选项点击事件
+            document.querySelectorAll('.batch-radio-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    // 移除所有选项的选中状态
+                    document.querySelectorAll('.batch-radio-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    // 设置当前选项为选中状态
+                    option.classList.add('selected');
+                    
+                    // 选中对应的单选按钮
+                    const radio = option.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                });
+            });
+            
+            batchSelectionArea.style.display = 'block';
+        }
+        
+        // 添加商品事件监听
+        function addProductEventListeners() {
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const productId = e.target.getAttribute('data-id');
+                    editProduct(productId);
+                });
+            });
+            
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const productId = e.target.getAttribute('data-id');
+                    checkAndDeleteProduct(productId);
+                });
+            });
+            
+            document.querySelectorAll('.btn-view-batches').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const productId = e.target.getAttribute('data-id');
+                    viewProductBatches(productId);
+                });
+            });
+        }
+        
+        // 查看商品批次
+        function viewProductBatches(productId) {
+            const product = inventoryItems.find(item => item.id == productId);
+            if (!product) return;
+            
+            const productBatches = batches.filter(batch => batch.product_id == productId);
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>${product.name} - 批次管理</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="batch-section">
+                        <div class="batch-header">
+                            <span>有效期批次</span>
+                            <span>总计: ${productBatches.reduce((sum, batch) => sum + batch.quantity, 0)}</span>
+                        </div>
+                        <div class="batch-content expanded">
+                            ${productBatches.length === 0 ? 
+                                '<p style="text-align: center; color: #777;">暂无批次数据</p>' : 
+                                productBatches.map(batch => {
+                                    // 检查是否没有有效期
+                                    const hasNoExpiry = !batch.expiry_date || batch.expiry_date === '1970-01-01';
+                                    
+                                    let expiryDateText = '无';
+                                    let statusClass = 'status-normal';
+                                    let statusText = '正常';
+                                    let daysUntilExpiry = null;
+                                    
+                                    if (!hasNoExpiry) {
+                                        const expiryDate = new Date(batch.expiry_date);
+                                        const today = new Date();
+                                        daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                                        
+                                        expiryDateText = expiryDate.toLocaleDateString('zh-CN');
+                                        
+                                        if (daysUntilExpiry < 0) statusClass = 'status-expired';
+                                        else if (daysUntilExpiry <= 7) statusClass = 'status-warning';
+                                        
+                                        if (daysUntilExpiry < 0) statusText = '已过期';
+                                        else if (daysUntilExpiry <= 7) statusText = '即将过期';
+                                    }
+                                    
+                                    return `
+                                        <div class="batch-item">
+                                            <div class="batch-expiry-info">
+                                                <span class="${hasNoExpiry ? 'no-expiry' : ''}">${expiryDateText}</span>
+                                                <span class="batch-quantity">${batch.quantity}</span>
+                                                ${!hasNoExpiry ? `<span class="expiry-status ${statusClass}">${statusText}</span>` : ''}
+                                            </div>
+                                            <div class="batch-actions">
+                                                ${!hasNoExpiry && daysUntilExpiry < 0 ? 
+                                                    `<button class="btn-sm btn-danger btn-destroy-batch" data-id="${batch.id}">销毁</button>` : 
+                                                    ''
+                                                }
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.close').addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+            
+            modal.querySelectorAll('.btn-destroy-batch').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const batchId = e.target.getAttribute('data-id');
+                    // 先关闭当前批次管理窗口
+                    modal.remove();
+                    // 然后显示销毁确认窗口
+                    confirmDestroyBatch(batchId);
+                });
+            });
+        }
+        
+        // 编辑商品
+        function editProduct(id) {
+            const product = inventoryItems.find(item => item.id == id);
+            if (!product) return;
+            
+            document.getElementById('product-modal-title').textContent = '编辑商品';
+            document.getElementById('product-name').value = product.name;
+            document.getElementById('product-category').value = product.category;
+            document.getElementById('product-min-stock').value = product.min_stock || 5;
+            document.getElementById('product-description').value = product.description || '';
+            
+            document.getElementById('product-name').classList.remove('input-error', 'input-success');
+            document.getElementById('product-name-validation').style.display = 'none';
+            
+            document.getElementById('product-form').dataset.editingId = id;
+            
+            document.getElementById('product-modal').style.display = 'flex';
+        }
+        
+        // 检查并删除商品
+        async function checkAndDeleteProduct(id) {
+            productToDelete = id;
+            const product = inventoryItems.find(item => item.id == id);
+            
+            if (!product) return;
+            
+            try {
+                let hasTransactions = false;
+                
+                if (transactionsTableExists) {
+                    const { data, error } = await supabase
+                        .from('transactions')
+                        .select('id')
+                        .eq('product_id', id)
+                        .limit(1);
+                    
+                    if (error) throw error;
+                    hasTransactions = data && data.length > 0;
+                } else {
+                    hasTransactions = transactions.some(t => t.product_id == id);
+                }
+                
+                const hasBatches = batches.some(batch => batch.product_id == id);
+                
+                if (hasTransactions || hasBatches) {
+                    document.getElementById('delete-confirm-modal').style.display = 'flex';
+                } else {
+                    deleteProduct(id);
+                }
+            } catch (error) {
+                console.error('检查交易记录错误:', error);
+                showAlert('删除失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 删除商品
+        async function deleteProduct(id, deleteOption = 'cascade') {
+            if (!confirm('确定要删除这个商品吗？此操作不可撤销。')) return;
+            
+            try {
+                // 先删除相关批次
+                const productBatches = batches.filter(batch => batch.product_id == id);
+                for (const batch of productBatches) {
+                    // 为每个批次创建销毁记录
+                    const transaction = {
+                        type: 'outbound',
+                        product_id: id,
+                        product_name: '已删除商品',
+                        quantity: batch.quantity,
+                        reason: '商品删除销毁',
+                        notes: `商品删除，销毁批次(有效期: ${batch.expiry_date || '无'})`,
+                        employee_id: currentUser.id,
+                        employee_name: currentUser.name,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const savedTransaction = await saveTransactionToSupabase(transaction);
+                    if (savedTransaction) {
+                        transactions.unshift(savedTransaction);
+                    } else {
+                        transaction.id = Date.now().toString();
+                        transactions.unshift(transaction);
+                    }
+                    
+                    // 删除批次
+                    await deleteBatchFromSupabase(batch.id);
+                }
+                
+                if (deleteOption === 'cascade' && transactionsTableExists) {
+                    const { error: transactionError } = await supabase
+                        .from('transactions')
+                        .delete()
+                        .eq('product_id', id);
+                    
+                    if (transactionError) throw transactionError;
+                } else if (deleteOption === 'set-null' && transactionsTableExists) {
+                    const { error: transactionError } = await supabase
+                        .from('transactions')
+                        .update({ 
+                            product_name: '已删除商品',
+                            product_id: null
+                        })
+                        .eq('product_id', id);
+                    
+                    if (transactionError) throw transactionError;
+                }
+                
+                const { error } = await supabase
+                    .from('inventory')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                await loadInventory();
+                await loadBatches();
+                if (transactionsTableExists) {
+                    await loadTransactions();
+                }
+                updateDashboard();
+                renderExpiredProducts();
+                showAlert('商品删除成功!', 'success');
+            } catch (error) {
+                console.error('删除错误:', error);
+                showAlert('删除失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 根据商品ID删除批次
+        async function deleteBatchFromSupabaseByProduct(productId) {
+            try {
+                const { error } = await supabase
+                    .from('batches')
+                    .delete()
+                    .eq('product_id', productId);
+                
+                if (error) throw error;
+                
+                return true;
+            } catch (error) {
+                console.error('删除商品批次错误:', error);
+                return false;
+            }
+        }
+        
+        // 更新仪表板
+        function updateDashboard() {
+            safeSetTextContent('total-products', inventoryItems.length);
+            
+            const totalInventory = batches.reduce((sum, batch) => sum + batch.quantity, 0);
+            safeSetTextContent('total-inventory', totalInventory);
+            
+            const lowStockCount = inventoryItems.filter(item => {
+                const productBatches = batches.filter(batch => batch.product_id === item.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                return totalQuantity < (item.min_stock || 5);
+            }).length;
+            
+            safeSetTextContent('low-stock-count', lowStockCount);
+            
+            // 计算预警商品数量（低库存或即将过期）
+            const warningProductsCount = inventoryItems.filter(item => {
+                const productBatches = batches.filter(batch => batch.product_id === item.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                
+                // 检查低库存
+                if (totalQuantity < (item.min_stock || 5)) return true;
+                
+                // 检查即将过期（7天内）
+                const today = new Date();
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(today.getDate() + 7);
+                
+                return productBatches.some(batch => {
+                    if (!batch.expiry_date || batch.expiry_date === '1970-01-01') return false;
+                    const expiryDate = new Date(batch.expiry_date);
+                    return expiryDate <= sevenDaysFromNow && expiryDate >= today;
+                });
+            }).length;
+            
+            safeSetTextContent('warning-products-count', warningProductsCount);
+            
+            const lowStockAlerts = document.getElementById('low-stock-alerts');
+            if (lowStockAlerts) {
+                lowStockAlerts.innerHTML = '';
+                
+                const lowStockProducts = inventoryItems.filter(item => {
+                    const productBatches = batches.filter(batch => batch.product_id === item.id);
+                    const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                    return totalQuantity < (item.min_stock || 5);
+                });
+                
+                if (lowStockProducts.length === 0) {
+                    lowStockAlerts.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> 暂无低库存商品</div>';
+                } else {
+                    lowStockProducts.forEach(product => {
+                        const productBatches = batches.filter(batch => batch.product_id === product.id);
+                        const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                        
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-warning';
+                        alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${product.name} 库存不足: ${totalQuantity} (预警值: ${product.min_stock || 5})`;
+                        lowStockAlerts.appendChild(alert);
+                    });
+                }
+            }
+            
+            const recentActivities = document.getElementById('recent-activities');
+            if (recentActivities) {
+                recentActivities.innerHTML = '';
+                
+                const recentTransactions = transactions.slice(0, 5);
+                if (recentTransactions.length === 0) {
+                    recentActivities.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> 暂无最近活动</div>';
+                } else {
+                    recentTransactions.forEach(transaction => {
+                        const activity = document.createElement('div');
+                        activity.className = 'card';
+                        
+                        const date = new Date(transaction.created_at).toLocaleDateString('zh-CN');
+                        const typeText = transaction.type === 'inbound' ? '入库' : '出库';
+                        
+                        activity.innerHTML = `
+                            <strong>${date}</strong> - ${typeText}操作
+                            <div>商品: ${transaction.product_name}</div>
+                            <div>数量: ${transaction.quantity}</div>
+                            <div>操作员工: ${transaction.employee_name} (${transaction.employee_id})</div>
+                            <div>${transaction.notes ? `备注: ${transaction.notes}` : ''}</div>
+                        `;
+                        
+                        recentActivities.appendChild(activity);
+                    });
+                }
+            }
+        }
+        
+        // 渲染过期商品页面
+        function renderExpiredProducts() {
+            const today = new Date();
+            const sevenDaysFromNow = new Date();
+            sevenDaysFromNow.setDate(today.getDate() + 7);
+            
+            const expiredBatches = [];
+            const expiringBatches = [];
+            
+            batches.forEach(batch => {
+                // 跳过没有有效期的批次
+                if (!batch.expiry_date || batch.expiry_date === '1970-01-01') return;
+                
+                const expiryDate = new Date(batch.expiry_date);
+                const product = inventoryItems.find(item => item.id === batch.product_id);
+                
+                if (!product) return;
+                
+                const batchInfo = {
+                    ...batch,
+                    product_name: product.name,
+                    product_category: product.category
+                };
+                
+                if (expiryDate < today) {
+                    batchInfo.daysOverdue = Math.floor((today - expiryDate) / (1000 * 60 * 60 * 24));
+                    expiredBatches.push(batchInfo);
+                } else if (expiryDate <= sevenDaysFromNow) {
+                    batchInfo.daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                    expiringBatches.push(batchInfo);
+                }
+            });
+            
+            const expiredProductsList = document.getElementById('expired-products-list');
+            if (expiredProductsList) {
+                expiredProductsList.innerHTML = '';
+                
+                if (expiredBatches.length === 0) {
+                    expiredProductsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无已过期商品</td></tr>';
+                } else {
+                    expiredBatches.forEach(batch => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${batch.product_name}</td>
+                            <td>${batch.product_category}</td>
+                            <td>
+                                <div class="batch-expiry-info">
+                                    <span>${new Date(batch.expiry_date).toLocaleDateString('zh-CN')}</span>
+                                    <span class="batch-quantity">${batch.quantity}</span>
+                                </div>
+                            </td>
+                            <td>${batch.daysOverdue}天</td>
+                            <td>
+                                <button class="btn-sm btn-danger btn-destroy-batch" data-id="${batch.id}">销毁</button>
+                            </td>
+                        `;
+                        expiredProductsList.appendChild(row);
+                    });
+                }
+            }
+            
+            const expiringProductsList = document.getElementById('expiring-products-list');
+            if (expiringProductsList) {
+                expiringProductsList.innerHTML = '';
+                
+                if (expiringBatches.length === 0) {
+                    expiringProductsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无即将过期商品</td></tr>';
+                } else {
+                    expiringBatches.forEach(batch => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${batch.product_name}</td>
+                            <td>${batch.product_category}</td>
+                            <td>
+                                <div class="batch-expiry-info">
+                                    <span>${new Date(batch.expiry_date).toLocaleDateString('zh-CN')}</span>
+                                    <span class="batch-quantity">${batch.quantity}</span>
+                                </div>
+                            </td>
+                            <td>${batch.daysUntilExpiry}天</td>
+                            <td>
+                                <button class="btn-sm btn-warning" onclick="alert('请及时处理即将过期商品')">关注</button>
+                            </td>
+                        `;
+                        expiringProductsList.appendChild(row);
+                    });
+                }
+            }
+            
+            document.querySelectorAll('.btn-destroy-batch').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const batchId = e.target.getAttribute('data-id');
+                    confirmDestroyBatch(batchId);
+                });
+            });
+        }
+        
+        // 确认销毁批次
+        function confirmDestroyBatch(batchId) {
+            batchToDestroy = batchId;
+            const batch = batches.find(b => b.id == batchId);
+            
+            if (!batch) return;
+            
+            const product = inventoryItems.find(item => item.id === batch.product_id);
+            const productName = product ? product.name : '未知商品';
+            
+            // 检查是否有有效期
+            const hasExpiry = batch.expiry_date && batch.expiry_date !== '1970-01-01';
+            const expiryText = hasExpiry ? 
+                `有效期: ${new Date(batch.expiry_date).toLocaleDateString('zh-CN')}` : 
+                '无有效期';
+            
+            document.getElementById('destroy-batch-message').textContent = 
+                `确定要销毁 ${productName} 的过期批次吗？(${expiryText}, 数量: ${batch.quantity}) 此操作不可撤销。`;
+            
+            document.getElementById('destroy-batch-modal').style.display = 'flex';
+        }
+        
+        // 执行批次销毁
+        async function destroyBatch(batchId) {
+            try {
+                const batch = batches.find(b => b.id == batchId);
+                if (!batch) {
+                    throw new Error('批次不存在');
+                }
+                
+                const success = await deleteBatchFromSupabase(batchId);
+                
+                if (success) {
+                    batches = batches.filter(b => b.id != batchId);
+                    
+                    // 创建销毁记录
+                    const product = inventoryItems.find(item => item.id === batch.product_id);
+                    if (product) {
+                        // 检查是否有有效期
+                        const hasExpiry = batch.expiry_date && batch.expiry_date !== '1970-01-01';
+                        const expiryText = hasExpiry ? 
+                            `(有效期: ${new Date(batch.expiry_date).toLocaleDateString('zh-CN')})` : 
+                            '(无有效期)';
+                        
+                        const transaction = {
+                            type: 'outbound',
+                            product_id: product.id,
+                            product_name: product.name,
+                            quantity: batch.quantity,
+                            reason: '过期销毁',
+                            notes: `过期销毁 ${expiryText}`,
+                            employee_id: currentUser.id,
+                            employee_name: currentUser.name,
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        const savedTransaction = await saveTransactionToSupabase(transaction);
+                        
+                        if (savedTransaction) {
+                            transactions.unshift(savedTransaction);
+                        } else {
+                            transaction.id = Date.now().toString();
+                            transactions.unshift(transaction);
+                        }
+                    }
+                    
+                    updateDashboard();
+                    renderExpiredProducts();
+                    renderProducts();
+                    renderTransactionHistory();
+                    
+                    showAlert('批次销毁成功!', 'success');
+                } else {
+                    throw new Error('销毁批次失败');
+                }
+            } catch (error) {
+                console.error('销毁批次错误:', error);
+                showAlert('销毁批次失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 销毁所有过期批次
+        async function destroyAllExpiredBatches() {
+            const today = new Date();
+            const expiredBatches = batches.filter(batch => {
+                if (!batch.expiry_date || batch.expiry_date === '1970-01-01') return false;
+                const expiryDate = new Date(batch.expiry_date);
+                return expiryDate < today;
+            });
+            
+            if (expiredBatches.length === 0) {
+                showAlert('没有找到过期批次', 'info');
+                return;
+            }
+            
+            if (!confirm(`确定要销毁所有 ${expiredBatches.length} 个过期批次吗？此操作不可撤销。`)) {
+                return;
+            }
+            
+            try {
+                let successCount = 0;
+                let failCount = 0;
+                
+                for (const batch of expiredBatches) {
+                    const success = await deleteBatchFromSupabase(batch.id);
+                    if (success) {
+                        successCount++;
+                        
+                        // 创建销毁记录
+                        const product = inventoryItems.find(item => item.id === batch.product_id);
+                        if (product) {
+                            // 检查是否有有效期
+                            const hasExpiry = batch.expiry_date && batch.expiry_date !== '1970-01-01';
+                            const expiryText = hasExpiry ? 
+                                `(有效期: ${new Date(batch.expiry_date).toLocaleDateString('zh-CN')})` : 
+                                '(无有效期)';
+                            
+                            const transaction = {
+                                type: 'outbound',
+                                product_id: product.id,
+                                product_name: product.name,
+                                quantity: batch.quantity,
+                                reason: '过期销毁',
+                                notes: `过期销毁 ${expiryText}`,
+                                employee_id: currentUser.id,
+                                employee_name: currentUser.name,
+                                created_at: new Date().toISOString()
+                            };
+                            
+                            const savedTransaction = await saveTransactionToSupabase(transaction);
+                            
+                            if (savedTransaction) {
+                                transactions.unshift(savedTransaction);
+                            } else {
+                                transaction.id = Date.now().toString();
+                                transactions.unshift(transaction);
+                            }
+                        }
+                    } else {
+                        failCount++;
+                    }
+                }
+                
+                await loadBatches();
+                
+                updateDashboard();
+                renderExpiredProducts();
+                renderProducts();
+                renderTransactionHistory();
+                
+                if (failCount === 0) {
+                    showAlert(`成功销毁所有 ${successCount} 个过期批次!`, 'success');
+                } else {
+                    showAlert(`成功销毁 ${successCount} 个批次，${failCount} 个批次销毁失败`, 'warning');
+                }
+            } catch (error) {
+                console.error('批量销毁错误:', error);
+                showAlert('批量销毁失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 渲染交易记录
+        function renderTransactionHistory() {
+            renderInboundHistory();
+            renderOutboundHistory();
+            renderAllHistory();
+        }
+        
+        // 渲染入库记录
+        function renderInboundHistory() {
+            const inboundHistory = document.getElementById('inbound-history');
+            if (!inboundHistory) return;
+            
+            inboundHistory.innerHTML = '';
+            
+            const inboundTransactions = transactions.filter(t => t.type === 'inbound');
+            
+            if (inboundTransactions.length === 0) {
+                inboundHistory.innerHTML = '<tr><td colspan="7" style="text-align: center;">暂无入库记录</td></tr>';
+                return;
+            }
+            
+            inboundTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const date = new Date(transaction.created_at).toLocaleDateString('zh-CN');
+                const expiryDate = transaction.expiry_date && transaction.expiry_date !== '1970-01-01' ? 
+                    new Date(transaction.expiry_date).toLocaleDateString('zh-CN') : '-';
+                
+                row.innerHTML = `
+                    <td>${date}</td>
+                    <td>${transaction.product_name}</td>
+                    <td>${transaction.quantity}</td>
+                    <td>${expiryDate}</td>
+                    <td>${transaction.employee_name} (${transaction.employee_id})</td>
+                    <td>${transaction.notes || '-'}</td>
+                    <td>
+                        <button class="btn-sm btn-info btn-edit-inbound" data-id="${transaction.id}">编辑</button>
+                        <button class="btn-sm btn-undo" data-id="${transaction.id}" data-type="${transaction.type}" data-product-id="${transaction.product_id}" data-quantity="${transaction.quantity}">撤销</button>
+                    </td>
+                `;
+                inboundHistory.appendChild(row);
+            });
+            
+            // 添加入库记录编辑按钮事件监听
+            document.querySelectorAll('.btn-edit-inbound').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const transactionId = e.target.getAttribute('data-id');
+                    editInboundTransaction(transactionId);
+                });
+            });
+        }
+        
+        // 编辑入库记录
+        function editInboundTransaction(transactionId) {
+            const transaction = transactions.find(t => t.id == transactionId);
+            if (!transaction) return;
+            
+            document.getElementById('edit-inbound-id').value = transaction.id;
+            document.getElementById('edit-inbound-product').value = transaction.product_name;
+            document.getElementById('edit-inbound-quantity').value = transaction.quantity;
+            
+            if (transaction.expiry_date && transaction.expiry_date !== '1970-01-01') {
+                document.getElementById('edit-inbound-expiry-date').value = transaction.expiry_date;
+            } else {
+                document.getElementById('edit-inbound-expiry-date').value = '';
+            }
+            
+            document.getElementById('edit-inbound-notes').value = transaction.notes || '';
+            
+            document.getElementById('edit-inbound-modal').style.display = 'flex';
+        }
+        
+        // 渲染出库记录
+        function renderOutboundHistory() {
+            const outboundHistory = document.getElementById('outbound-history');
+            if (!outboundHistory) return;
+            
+            outboundHistory.innerHTML = '';
+            
+            const outboundTransactions = transactions.filter(t => t.type === 'outbound');
+            
+            if (outboundTransactions.length === 0) {
+                outboundHistory.innerHTML = '<tr><td colspan="6" style="text-align: center;">暂无出库记录</td></tr>';
+                return;
+            }
+            
+            outboundTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const date = new Date(transaction.created_at).toLocaleDateString('zh-CN');
+                row.innerHTML = `
+                    <td>${date}</td>
+                    <td>${transaction.product_name}</td>
+                    <td>${transaction.quantity}</td>
+                    <td>${transaction.employee_name} (${transaction.employee_id})</td>
+                    <td>${transaction.reason || '-'}</td>
+                    <td>
+                        <button class="btn-sm btn-info btn-edit-outbound" data-id="${transaction.id}">编辑</button>
+                        <button class="btn-sm btn-undo" data-id="${transaction.id}" data-type="${transaction.type}" data-product-id="${transaction.product_id}" data-quantity="${transaction.quantity}">撤销</button>
+                    </td>
+                `;
+                outboundHistory.appendChild(row);
+            });
+            
+            // 添加出库记录编辑按钮事件监听
+            document.querySelectorAll('.btn-edit-outbound').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const transactionId = e.target.getAttribute('data-id');
+                    editOutboundTransaction(transactionId);
+                });
+            });
+        }
+        
+        // 编辑出库记录
+        function editOutboundTransaction(transactionId) {
+            const transaction = transactions.find(t => t.id == transactionId);
+            if (!transaction) return;
+            
+            document.getElementById('edit-outbound-id').value = transaction.id;
+            document.getElementById('edit-outbound-product').value = transaction.product_name;
+            document.getElementById('edit-outbound-quantity').value = transaction.quantity;
+            document.getElementById('edit-outbound-reason').value = transaction.reason || '销售';
+            document.getElementById('edit-outbound-notes').value = transaction.notes || '';
+            
+            document.getElementById('edit-outbound-modal').style.display = 'flex';
+        }
+        
+        // 渲染所有记录
+        function renderAllHistory() {
+            const allHistory = document.getElementById('all-history');
+            if (!allHistory) return;
+            
+            allHistory.innerHTML = '';
+            
+            if (transactions.length === 0) {
+                allHistory.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无操作记录</td></tr>';
+                return;
+            }
+            
+            filterHistory('all');
+        }
+        
+        // 筛选记录
+        function filterHistory(filterType) {
+            const allHistory = document.getElementById('all-history');
+            if (!allHistory) return;
+            
+            allHistory.innerHTML = '';
+            
+            let filteredTransactions = transactions;
+            
+            // 根据商品名称筛选
+            const productSearch = document.getElementById('history-product-search').value.trim().toLowerCase();
+            if (productSearch) {
+                filteredTransactions = filteredTransactions.filter(t => 
+                    t.product_name.toLowerCase().includes(productSearch)
+                );
+            }
+            
+            // 根据记录类型筛选
+            if (filterType !== 'all') {
+                filteredTransactions = filteredTransactions.filter(t => t.type === filterType);
+            }
+            
+            if (filteredTransactions.length === 0) {
+                allHistory.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无记录</td></tr>';
+                return;
+            }
+            
+            filteredTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const date = new Date(transaction.created_at).toLocaleString('zh-CN');
+                const expiryDate = transaction.expiry_date && transaction.expiry_date !== '1970-01-01' ? 
+                    new Date(transaction.expiry_date).toLocaleDateString('zh-CN') : '-';
+                
+                let typeText = '';
+                if (transaction.type === 'inbound') {
+                    typeText = '入库';
+                } else if (transaction.type === 'outbound') {
+                    typeText = '出库';
+                }
+                
+                row.innerHTML = `
+                    <td>${date}</td>
+                    <td>${typeText}</td>
+                    <td>${transaction.product_name}</td>
+                    <td>${transaction.quantity}</td>
+                    <td>${expiryDate}</td>
+                    <td>${transaction.employee_name} (${transaction.employee_id})</td>
+                    <td>${transaction.reason || ''} ${transaction.notes ? `(${transaction.notes})` : ''}</td>
+                    <td>
+                        <button class="btn-sm btn-undo" data-id="${transaction.id}" data-type="${transaction.type}" data-product-id="${transaction.product_id}" data-quantity="${transaction.quantity}">撤销</button>
+                    </td>
+                `;
+                allHistory.appendChild(row);
+            });
+        }
+        
+        // 撤销交易
+        async function undoTransaction(transactionId) {
+            const undoButton = document.querySelector(`.btn-undo[data-id="${transactionId}"]`);
+            
+            if (undoButton.disabled) return;
+            
+            if (!confirm('确定要撤销此操作吗？')) return;
+            
+            try {
+                undoButton.disabled = true;
+                undoButton.classList.add('undo-processing');
+                
+                const transaction = transactions.find(t => t.id == transactionId);
+                if (!transaction) {
+                    throw new Error('交易记录不存在');
+                }
+                
+                let product = inventoryItems.find(item => item.id == transaction.product_id);
+                if (!product) {
+                    if (transaction.product_name === '已删除商品') {
+                        throw new Error('该商品已被删除，无法撤销操作');
+                    }
+                    throw new Error('商品不存在');
+                }
+                
+                if (transaction.type === 'inbound' && transaction.expiry_date) {
+                    const batch = batches.find(b => 
+                        b.product_id == transaction.product_id && 
+                        b.expiry_date === transaction.expiry_date &&
+                        b.quantity >= transaction.quantity
+                    );
+                    
+                    if (batch) {
+                        if (batch.quantity === transaction.quantity) {
+                            await deleteBatchFromSupabase(batch.id);
+                            batches = batches.filter(b => b.id != batch.id);
+                        } else {
+                            const newQuantity = batch.quantity - transaction.quantity;
+                            await updateBatchInSupabase(batch.id, { quantity: newQuantity });
+                            batch.quantity = newQuantity;
+                        }
+                    }
+                }
+                
+                if (transactionsTableExists) {
+                    const { error: transactionError } = await supabase
+                        .from('transactions')
+                        .delete()
+                        .eq('id', transactionId);
+                    
+                    if (transactionError) throw transactionError;
+                }
+                
+                transactions = transactions.filter(t => t.id != transactionId);
+                
+                await loadInventory();
+                if (transactionsTableExists) {
+                    await loadTransactions();
+                }
+                
+                renderTransactionHistory();
+                updateDashboard();
+                
+                showAlert('操作已撤销!', 'success');
+                
+            } catch (error) {
+                console.error('撤销错误:', error);
+                showAlert('撤销失败: ' + error.message, 'error');
+                
+                undoButton.disabled = false;
+                undoButton.classList.remove('undo-processing');
+            }
+        }
+        
+        // 处理选定批次的出库
+        async function processOutboundWithSelectedBatch(selectedBatch, quantity, product, reason, notes) {
+            if (selectedBatch.quantity < quantity) {
+                throw new Error(`选定的批次库存不足 (当前: ${selectedBatch.quantity}, 需要: ${quantity})`);
+            }
+            
+            const newQuantity = selectedBatch.quantity - quantity;
+            if (newQuantity === 0) {
+                const success = await deleteBatchFromSupabase(selectedBatch.id);
+                if (success) {
+                    batches = batches.filter(b => b.id != selectedBatch.id);
+                } else {
+                    throw new Error('删除批次失败');
+                }
+            } else {
+                const updatedBatch = await updateBatchInSupabase(selectedBatch.id, { 
+                    quantity: newQuantity,
+                    updated_at: new Date().toISOString()
+                });
+                
+                if (updatedBatch) {
+                    selectedBatch.quantity = newQuantity;
+                } else {
+                    throw new Error('更新批次失败');
+                }
+            }
+            
+            const transaction = {
+                type: 'outbound',
+                product_id: product.id,
+                product_name: product.name,
+                quantity: quantity,
+                reason: reason,
+                notes: notes,
+                employee_id: currentUser.id,
+                employee_name: currentUser.name,
+                created_at: new Date().toISOString()
+            };
+            
+            const savedTransaction = await saveTransactionToSupabase(transaction);
+            
+            if (savedTransaction) {
+                transactions.unshift(savedTransaction);
+            } else {
+                transaction.id = Date.now().toString();
+                transactions.unshift(transaction);
+            }
+        }
+        
+        // PWA安装提示功能
+        function setupPWA() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installButton.style.display = 'block';
+            });
+            
+            installButton.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                
+                deferredPrompt.prompt();
+                
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('用户接受了安装提示');
+                    installButton.style.display = 'none';
+                } else {
+                    console.log('用户拒绝了安装提示');
+                }
+                
+                deferredPrompt = null;
+            });
+            
+            window.addEventListener('appinstalled', (evt) => {
+                console.log('应用已成功安装');
+                installButton.style.display = 'none';
+            });
+            
+            window.addEventListener('online', () => {
+                offlineStatus.style.display = 'none';
+                showAlert('网络连接已恢复', 'success');
+            });
+            
+            window.addEventListener('offline', () => {
+                offlineStatus.style.display = 'block';
+                showAlert('网络连接已断开，部分功能可能受限', 'warning');
+            });
+            
+            function checkDisplayMode() {
+                if (window.matchMedia('(display-mode: standalone)').matches) {
+                    console.log('以独立应用模式运行');
+                }
+            }
+            
+            window.addEventListener('load', checkDisplayMode);
+            
+            window.matchMedia('(display-mode: standalone)').addListener(checkDisplayMode);
+        }
+        
+        // 设置事件监听
+        function setupEventListeners() {
+            // 标签切换
+            document.querySelectorAll('.nav-tabs a').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = e.target.getAttribute('href').substring(1);
+                    
+                    document.querySelectorAll('.nav-tabs a').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(target).classList.add('active');
+                    
+                    if (target === 'expired-products') {
+                        renderExpiredProducts();
+                    }
+                });
+            });
+            
+            // 过期商品页面标签切换
+            document.querySelectorAll('.expiry-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabType = this.getAttribute('data-tab');
+                    
+                    document.querySelectorAll('.expiry-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    document.querySelectorAll('.expiry-tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    if (tabType === 'expired') {
+                        document.getElementById('expired-tab-content').classList.remove('hidden');
+                    } else {
+                        document.getElementById('expiring-tab-content').classList.remove('hidden');
+                    }
+                });
+            });
+            
+            // 添加商品按钮
+            document.getElementById('add-product-btn').addEventListener('click', () => {
+                document.getElementById('product-modal-title').textContent = '添加商品';
+                document.getElementById('product-form').reset();
+                delete document.getElementById('product-form').dataset.editingId;
+                
+                document.getElementById('product-name').classList.remove('input-error', 'input-success');
+                document.getElementById('product-name-validation').style.display = 'none';
+                
+                document.getElementById('product-modal').style.display = 'flex';
+            });
+            
+            // 商品表单提交
+            document.getElementById('product-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('product-name').value.trim();
+                const category = document.getElementById('product-category').value;
+                const minStock = parseInt(document.getElementById('product-min-stock').value) || 5;
+                const description = document.getElementById('product-description').value;
+                const editingId = document.getElementById('product-form').dataset.editingId;
+                
+                if (!name || !category) {
+                    showAlert('请填写商品名称和分类', 'error');
+                    return;
+                }
+                
+                const duplicateCheck = checkProductNameDuplicate(name, editingId);
+                if (duplicateCheck.isDuplicate) {
+                    showAlert(`商品名称重复: "${duplicateCheck.existingProduct.name}" (分类: ${duplicateCheck.existingProduct.category})`, 'error');
+                    return;
+                }
+                
+                try {
+                    const updateData = { 
+                        name,
+                        category,
+                        min_stock: minStock,
+                        description,
+                        updated_at: new Date().toISOString()
+                    };
+                    
+                    if (editingId) {
+                        const { error } = await supabase
+                            .from('inventory')
+                            .update(updateData)
+                            .eq('id', editingId);
+                        
+                        if (error) throw error;
+                    } else {
+                        const insertData = {
+                            ...updateData,
+                            quantity: 0,
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        const { data, error } = await supabase
+                            .from('inventory')
+                            .insert([insertData])
+                            .select();
+                        
+                        if (error) throw error;
+                    }
+                    
+                    document.getElementById('product-modal').style.display = 'none';
+                    
+                    await loadInventory();
+                    updateDashboard();
+                    
+                    showAlert('商品保存成功!', 'success');
+                } catch (error) {
+                    console.error('保存商品错误:', error);
+                    showAlert('保存失败: ' + error.message, 'error');
+                }
+            });
+            
+            // 入库表单提交 - 已修改：取消数量大于0时对有效期的强制要求
+            document.getElementById('inbound-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const productId = document.getElementById('inbound-product').value;
+                const quantity = parseInt(document.getElementById('inbound-quantity').value);
+                const expiryDate = document.getElementById('inbound-expiry-date').value;
+                const notes = document.getElementById('inbound-notes').value;
+                
+                if (!productId) {
+                    showAlert('请选择商品', 'error');
+                    return;
+                }
+                
+                if (isNaN(quantity) || quantity < 0) {
+                    showAlert('请输入有效的入库数量', 'error');
+                    return;
+                }
+                
+                try {
+                    const product = inventoryItems.find(item => item.id == productId);
+                    if (!product) {
+                        throw new Error('商品不存在');
+                    }
+                    
+                    // 如果数量为0，只记录交易，不更新批次
+                    if (quantity === 0) {
+                        const transaction = {
+                            type: 'inbound',
+                            product_id: productId,
+                            product_name: product.name,
+                            quantity: quantity,
+                            expiry_date: expiryDate,
+                            notes: notes,
+                            employee_id: currentUser.id,
+                            employee_name: currentUser.name,
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        const savedTransaction = await saveTransactionToSupabase(transaction);
+                        
+                        if (savedTransaction) {
+                            transactions.unshift(savedTransaction);
+                        } else {
+                            transaction.id = Date.now().toString();
+                            transactions.unshift(transaction);
+                        }
+                        
+                        document.getElementById('inbound-form').reset();
+                        
+                        await loadInventory();
+                        renderTransactionHistory();
+                        updateDashboard();
+                        renderExpiredProducts();
+                        
+                        showAlert('入库操作成功!', 'success');
+                        return;
+                    }
+                    
+                    const existingBatch = batches.find(batch => 
+                        batch.product_id == productId && 
+                        batch.expiry_date === expiryDate
+                    );
+                    
+                    if (existingBatch) {
+                        const newQuantity = existingBatch.quantity + quantity;
+                        const updatedBatch = await updateBatchInSupabase(existingBatch.id, { 
+                            quantity: newQuantity,
+                            updated_at: new Date().toISOString()
+                        });
+                        
+                        if (updatedBatch) {
+                            existingBatch.quantity = newQuantity;
+                        } else {
+                            throw new Error('更新批次失败');
+                        }
+                    } else {
+                        // 不再强制要求填写有效期，即使数量大于0也可以不填写有效期
+                        const newBatch = {
+                            product_id: productId,
+                            expiry_date: expiryDate || null, // 允许有效期为null
+                            quantity: quantity,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        };
+                        
+                        const savedBatch = await saveBatchToSupabase(newBatch);
+                        if (savedBatch) {
+                            batches.push(savedBatch);
+                        } else {
+                            throw new Error('创建批次失败');
+                        }
+                    }
+                    
+                    const transaction = {
+                        type: 'inbound',
+                        product_id: productId,
+                        product_name: product.name,
+                        quantity: quantity,
+                        expiry_date: expiryDate,
+                        notes: notes,
+                        employee_id: currentUser.id,
+                        employee_name: currentUser.name,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const savedTransaction = await saveTransactionToSupabase(transaction);
+                    
+                    if (savedTransaction) {
+                        transactions.unshift(savedTransaction);
+                    } else {
+                        transaction.id = Date.now().toString();
+                        transactions.unshift(transaction);
+                    }
+                    
+                    document.getElementById('inbound-form').reset();
+                    
+                    await loadInventory();
+                    renderTransactionHistory();
+                    updateDashboard();
+                    renderExpiredProducts();
+                    
+                    showAlert('入库操作成功!', 'success');
+                } catch (error) {
+                    console.error('入库错误:', error);
+                    showAlert('入库失败: ' + error.message, 'error');
+                }
+            });
+            
+            // 出库表单提交 - 已修改为使用表单中选择的批次
+            document.getElementById('outbound-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const productId = document.getElementById('outbound-product').value;
+                const quantity = parseInt(document.getElementById('outbound-quantity').value);
+                const reason = document.getElementById('outbound-reason').value;
+                const notes = document.getElementById('outbound-notes').value;
+                
+                if (!productId) {
+                    showAlert('请选择商品', 'error');
+                    return;
+                }
+                
+                if (isNaN(quantity) || quantity <= 0) {
+                    showAlert('请输入有效的出库数量', 'error');
+                    return;
+                }
+                
+                try {
+                    const product = inventoryItems.find(item => item.id == productId);
+                    if (!product) {
+                        throw new Error('商品不存在');
+                    }
+                    
+                    // 获取选中的批次ID
+                    const selectedBatchRadio = document.querySelector('input[name="selected-batch"]:checked');
+                    if (!selectedBatchRadio) {
+                        throw new Error('请选择一个批次');
+                    }
+                    
+                    const selectedBatchId = selectedBatchRadio.value;
+                    const selectedBatch = batches.find(b => b.id == selectedBatchId);
+                    
+                    if (!selectedBatch) {
+                        throw new Error('选定的批次不存在');
+                    }
+                    
+                    // 检查选定批次库存是否足够
+                    if (selectedBatch.quantity < quantity) {
+                        throw new Error(`选定批次库存不足 (当前: ${selectedBatch.quantity}, 需要: ${quantity})`);
+                    }
+                    
+                    // 执行出库操作
+                    await processOutboundWithSelectedBatch(selectedBatch, quantity, product, reason, notes);
+                    
+                    document.getElementById('outbound-form').reset();
+                    
+                    await loadInventory();
+                    renderTransactionHistory();
+                    updateDashboard();
+                    renderExpiredProducts();
+                    
+                    showAlert('出库操作成功!', 'success');
+                } catch (error) {
+                    console.error('出库错误:', error);
+                    showAlert('出库失败: ' + error.message, 'error');
+                }
+            });
+            
+            // 编辑入库表单提交
+            document.getElementById('edit-inbound-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const transactionId = document.getElementById('edit-inbound-id').value;
+                const quantity = parseInt(document.getElementById('edit-inbound-quantity').value);
+                const expiryDate = document.getElementById('edit-inbound-expiry-date').value;
+                const notes = document.getElementById('edit-inbound-notes').value;
+                
+                if (isNaN(quantity) || quantity < 0) {
+                    showAlert('请输入有效的入库数量', 'error');
+                    return;
+                }
+                
+                try {
+                    const transaction = transactions.find(t => t.id == transactionId);
+                    if (!transaction) {
+                        throw new Error('交易记录不存在');
+                    }
+                    
+                    // 更新交易记录
+                    const updatedTransaction = await updateTransactionInSupabase(transactionId, {
+                        quantity: quantity,
+                        expiry_date: expiryDate,
+                        notes: notes
+                    });
+                    
+                    if (updatedTransaction) {
+                        // 更新本地数据
+                        transaction.quantity = quantity;
+                        transaction.expiry_date = expiryDate;
+                        transaction.notes = notes;
+                        
+                        // 更新批次信息
+                        const existingBatch = batches.find(batch => 
+                            batch.product_id == transaction.product_id && 
+                            batch.expiry_date === transaction.expiry_date
+                        );
+                        
+                        if (existingBatch) {
+                            // 计算数量差异
+                            const quantityDiff = quantity - transaction.quantity;
+                            const newQuantity = existingBatch.quantity + quantityDiff;
+                            
+                            if (newQuantity < 0) {
+                                throw new Error('修改后的数量不能小于当前批次数量');
+                            }
+                            
+                            const updatedBatch = await updateBatchInSupabase(existingBatch.id, { 
+                                quantity: newQuantity,
+                                updated_at: new Date().toISOString()
+                            });
+                            
+                            if (updatedBatch) {
+                                existingBatch.quantity = newQuantity;
+                            } else {
+                                throw new Error('更新批次失败');
+                            }
+                        } else {
+                            throw new Error('找不到对应的批次信息');
+                        }
+                    } else {
+                        throw new Error('更新交易记录失败');
+                    }
+                    
+                    document.getElementById('edit-inbound-modal').style.display = 'none';
+                    
+                    await loadInventory();
+                    renderTransactionHistory();
+                    updateDashboard();
+                    renderExpiredProducts();
+                    
+                    showAlert('入库记录修改成功!', 'success');
+                } catch (error) {
+                    console.error('修改入库记录错误:', error);
+                    showAlert('修改失败: ' + error.message, 'error');
+                }
+            });
+            
+            // 编辑出库表单提交
+            document.getElementById('edit-outbound-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const transactionId = document.getElementById('edit-outbound-id').value;
+                const quantity = parseInt(document.getElementById('edit-outbound-quantity').value);
+                const reason = document.getElementById('edit-outbound-reason').value;
+                const notes = document.getElementById('edit-outbound-notes').value;
+                
+                if (isNaN(quantity) || quantity <= 0) {
+                    showAlert('请输入有效的出库数量', 'error');
+                    return;
+                }
+                
+                try {
+                    const transaction = transactions.find(t => t.id == transactionId);
+                    if (!transaction) {
+                        throw new Error('交易记录不存在');
+                    }
+                    
+                    // 更新交易记录
+                    const updatedTransaction = await updateTransactionInSupabase(transactionId, {
+                        quantity: quantity,
+                        reason: reason,
+                        notes: notes
+                    });
+                    
+                    if (updatedTransaction) {
+                        // 更新本地数据
+                        transaction.quantity = quantity;
+                        transaction.reason = reason;
+                        transaction.notes = notes;
+                    } else {
+                        throw new Error('更新交易记录失败');
+                    }
+                    
+                    document.getElementById('edit-outbound-modal').style.display = 'none';
+                    
+                    renderTransactionHistory();
+                    
+                    showAlert('出库记录修改成功!', 'success');
+                } catch (error) {
+                    console.error('修改出库记录错误:', error);
+                    showAlert('修改失败: ' + error.message, 'error');
+                }
+            });
+            
+            // 记录筛选
+            document.getElementById('history-filter').addEventListener('change', (e) => {
+                filterHistory(e.target.value);
+            });
+            
+            // 商品名称筛选
+            document.getElementById('history-product-search').addEventListener('input', (e) => {
+                const filterType = document.getElementById('history-filter').value;
+                filterHistory(filterType);
+            });
+            
+            // 清除筛选
+            document.getElementById('clear-history-filter').addEventListener('click', function() {
+                document.getElementById('history-product-search').value = '';
+                document.getElementById('history-filter').value = 'all';
+                filterHistory('all');
+            });
+            
+            // 关闭模态框
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+            
+            // 商品搜索
+            document.getElementById('product-search').addEventListener('input', (e) => {
+                const keyword = e.target.value.toLowerCase();
+                const filteredItems = inventoryItems.filter(item => 
+                    item.name.toLowerCase().includes(keyword) || 
+                    item.category.toLowerCase().includes(keyword)
+                );
+                renderFilteredProducts(filteredItems);
+            });
+            
+            // 分类筛选
+            document.querySelectorAll('.category-filter button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    document.querySelectorAll('.category-filter button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    e.target.classList.add('active');
+                    
+                    const category = e.target.getAttribute('data-category');
+                    if (category === 'all') {
+                        renderProducts();
+                    } else {
+                        const filteredItems = inventoryItems.filter(item => item.category === category);
+                        renderFilteredProducts(filteredItems);
+                    }
+                });
+            });
+            
+            // 点击模态框外部关闭
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+            
+            // 删除确认模态框事件
+            document.querySelectorAll('.delete-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.delete-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    document.querySelector(`#${this.querySelector('input').id}`).checked = true;
+                });
+            });
+            
+            document.getElementById('cancel-delete').addEventListener('click', function() {
+                document.getElementById('delete-confirm-modal').style.display = 'none';
+                productToDelete = null;
+            });
+            
+            document.getElementById('confirm-delete').addEventListener('click', function() {
+                const selectedOption = document.querySelector('.delete-option.selected').getAttribute('data-option');
+                document.getElementById('delete-confirm-modal').style.display = 'none';
+                if (productToDelete) {
+                    deleteProduct(productToDelete, selectedOption);
+                    productToDelete = null;
+                }
+            });
+            
+            // 销毁批次模态框事件
+            document.getElementById('cancel-destroy').addEventListener('click', function() {
+                document.getElementById('destroy-batch-modal').style.display = 'none';
+                batchToDestroy = null;
+            });
+            
+            document.getElementById('confirm-destroy').addEventListener('click', function() {
+                document.getElementById('destroy-batch-modal').style.display = 'none';
+                if (batchToDestroy) {
+                    destroyBatch(batchToDestroy);
+                    batchToDestroy = null;
+                }
+            });
+            
+            // 销毁所有过期批次按钮
+            document.getElementById('destroy-all-expired-btn').addEventListener('click', function() {
+                destroyAllExpiredBatches();
+            });
+            
+            // 使用事件委托绑定撤销按钮
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('btn-undo')) {
+                    const transactionId = e.target.getAttribute('data-id');
+                    undoTransaction(transactionId);
+                }
+            });
+            
+            // 批次选择模态框事件
+            document.getElementById('cancel-batch-select').addEventListener('click', function() {
+                document.getElementById('batch-selection-modal').style.display = 'none';
+            });
+            
+            document.getElementById('confirm-batch-select').addEventListener('click', async function() {
+                const modal = document.getElementById('batch-selection-modal');
+                const selectedBatchId = modal.querySelector('input[name="selected-batch"]:checked').value;
+                const selectedBatch = batches.find(b => b.id == selectedBatchId);
+                
+                if (!selectedBatch) {
+                    showAlert('请选择一个批次', 'error');
+                    return;
+                }
+                
+                try {
+                    const product = inventoryItems.find(item => item.id == outboundProductId);
+                    if (!product) {
+                        throw new Error('商品不存在');
+                    }
+                    
+                    await processOutboundWithSelectedBatch(
+                        selectedBatch, 
+                        outboundQuantity, 
+                        product, 
+                        outboundReason, 
+                        outboundNotes
+                    );
+                    
+                    document.getElementById('outbound-form').reset();
+                    document.getElementById('batch-selection-modal').style.display = 'none';
+                    
+                    await loadInventory();
+                    renderTransactionHistory();
+                    updateDashboard();
+                    renderExpiredProducts();
+                    
+                    showAlert('出库操作成功!', 'success');
+                    
+                    // 重置出库信息
+                    outboundProductId = null;
+                    outboundQuantity = null;
+                    outboundReason = null;
+                    outboundNotes = null;
+                } catch (error) {
+                    console.error('出库错误:', error);
+                    showAlert('出库失败: ' + error.message, 'error');
+                }
+            });
+            
+            // 商品选择事件 - 显示批次信息
+            document.getElementById('outbound-product').addEventListener('change', function() {
+                const productId = this.value;
+                showProductBatches(productId);
+            });
+            
+            // 设置商品名称验证
+            setupProductNameValidation();
+            
+            // 设置商品名称自动完成
+            setupProductNameAutocomplete();
+        }
+        
+        // 渲染筛选后的商品
+        function renderFilteredProducts(filteredItems) {
+            const productsList = document.getElementById('products-list');
+            if (!productsList) return;
+            
+            productsList.innerHTML = '';
+            
+            if (filteredItems.length === 0) {
+                productsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">没有找到匹配的商品</td></tr>';
+                return;
+            }
+            
+            filteredItems.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const productBatches = batches.filter(batch => batch.product_id === item.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.category}</td>
+                    <td class="${totalQuantity < (item.min_stock || 5) ? 'low-stock' : ''}">${totalQuantity}</td>
+                    <td>
+                        <button class="btn-sm btn-info btn-view-batches" data-id="${item.id}">查看批次</button>
+                        <button class="btn-sm btn-edit" data-id="${item.id}">编辑</button>
+                        <button class="btn-sm btn-danger btn-delete" data-id="${item.id}">删除</button>
+                    </td>
+                    <td class="description-cell">${item.description || '-'}</td>
+                `;
+                
+                productsList.appendChild(row);
+            });
+            
+            addProductEventListeners();
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            setupPWA();
+        });
+    </script>
+</body>
+</html>
