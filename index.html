@@ -1,0 +1,3148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出入库管理系统</title>
+    <!-- 引入Supabase客户端库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6a89cc;
+            --secondary-color: #82ccdd;
+            --accent-color: #f8c291;
+            --danger-color: #e55039;
+            --success-color: #78e08f;
+            --warning-color: #f6b93b;
+            --light-color: #f7f1e3;
+            --dark-color: #2c3e50;
+            --text-color: #333;
+            --border-radius: 12px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f9f7f7;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* 登录页面样式 */
+        #login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .login-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-logo {
+            margin-bottom: 30px;
+        }
+
+        .login-logo h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .login-logo p {
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+
+        .login-form {
+            text-align: left;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-form .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .login-form .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .login-form .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(106, 137, 204, 0.2);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background-color: #5a6fb8;
+        }
+
+        .login-error {
+            color: var(--danger-color);
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* 主应用样式 */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 0;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+
+        .logo {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-links li {
+            padding: 12px 20px;
+            margin: 5px 0;
+            transition: var(--transition);
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-links li:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .nav-links li.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .nav-links li i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .header h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 统计卡片 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background-color: #f5f5f5;
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background-color: #5a6fb8;
+            transform: translateY(-2px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #c44536;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #58d68d;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+
+        .btn-warning:hover {
+            background-color: #e6a336;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(106, 137, 204, 0.2);
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark-color);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* 预警样式 */
+        .warning {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .danger {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .tag-warning {
+            background-color: rgba(246, 185, 59, 0.2);
+            color: var(--warning-color);
+        }
+
+        .tag-danger {
+            background-color: rgba(229, 80, 57, 0.2);
+            color: var(--danger-color);
+        }
+
+        .tag-success {
+            background-color: rgba(120, 224, 143, 0.2);
+            color: var(--success-color);
+        }
+
+        /* 搜索和筛选 */
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            padding-left: 40px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .nav-links {
+                display: flex;
+                overflow-x: auto;
+            }
+            
+            .nav-links li {
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 4px solid transparent;
+            }
+            
+            .nav-links li.active {
+                border-left: none;
+                border-bottom: 4px solid var(--accent-color);
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #aaa;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            z-index: 1100;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--danger-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+
+        /* 离线提示 */
+        .offline-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: var(--danger-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            z-index: 1100;
+            display: none;
+            box-shadow: var(--shadow);
+        }
+
+        /* 页面样式 */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        /* 批次选择样式 */
+        .batch-option {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+        }
+
+        .batch-option label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .batch-option input {
+            margin-right: 10px;
+        }
+
+        /* 自动补全样式 */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: var(--transition);
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-highlight {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="login-page">
+        <div class="login-container">
+            <div class="login-logo">
+                <h1><i class="fas fa-boxes"></i> 出入库系统</h1>
+                <p>请使用工号和密码登录系统</p>
+            </div>
+            <form class="login-form" id="login-form">
+                <div class="form-group">
+                    <label class="form-label">工号</label>
+                    <input type="text" class="form-control" id="employee-id" placeholder="请输入工号" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="password" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="login-btn">登录</button>
+                <div class="login-error" id="login-error">工号或密码错误，请重试</div>
+            </form>
+            <div style="margin-top: 20px; font-size: 0.8rem; color: #666;">
+                <p>员工工号:</p>
+                <p>密码: 123456</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div id="app" style="display: none;">
+        <div class="container">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="logo">
+                    <h1><i class="fas fa-boxes"></i> 出入库系统</h1>
+                </div>
+                <ul class="nav-links">
+                    <li class="active" data-page="dashboard"><i class="fas fa-chart-pie"></i> 库存概览</li>
+                    <li data-page="products"><i class="fas fa-box-open"></i> 商品管理</li>
+                    <li data-page="inbound"><i class="fas fa-arrow-down"></i> 入库管理</li>
+                    <li data-page="outbound"><i class="fas fa-arrow-up"></i> 出库管理</li>
+                    <li data-page="expired"><i class="fas fa-exclamation-triangle"></i> 过期商品</li>
+                    <li data-page="records"><i class="fas fa-history"></i> 操作记录</li>
+                </ul>
+            </div>
+
+            <!-- 主内容区域 -->
+            <div class="main-content">
+                <div class="header">
+                    <h2 id="page-title">库存概览</h2>
+                    <div class="user-info">
+                        <div class="user-avatar" id="user-avatar">管</div>
+                        <span id="user-name">管理员</span>
+                        <button class="logout-btn" id="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+                    </div>
+                </div>
+
+                <!-- 页面内容区域 -->
+                <div id="page-content">
+                    <!-- 库存概览页面内容 -->
+                    <div id="dashboard-page" class="page active">
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div class="stat-label">商品种类</div>
+                                <div class="stat-number" id="product-types">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">库存总量</div>
+                                <div class="stat-number" id="total-stock">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">低库存商品</div>
+                                <div class="stat-number" id="low-stock">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">库存预警商品</div>
+                                <div class="stat-number" id="warning-stock">0</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">库存预警</div>
+                            </div>
+                            <div id="stock-warnings">
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>暂无低库存商品</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">最近操作</div>
+                            </div>
+                            <div id="recent-activities">
+                                <div class="empty-state">
+                                    <i class="fas fa-history"></i>
+                                    <p>暂无最近活动</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 商品管理页面内容 -->
+                    <div id="products-page" class="page">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">商品管理</div>
+                                <button class="btn" id="add-product-btn"><i class="fas fa-plus"></i> 添加商品</button>
+                            </div>
+                            
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" class="form-control" id="product-search" placeholder="搜索商品...">
+                                <div id="product-search-autocomplete" class="autocomplete-list"></div>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <button class="filter-btn active" data-category="all">全部</button>
+                                <button class="filter-btn" data-category="甜品">甜品</button>
+                                <button class="filter-btn" data-category="服务用品">服务用品</button>
+                                <button class="filter-btn" data-category="食品">食品</button>
+                                <button class="filter-btn" data-category="饮品">饮品</button>
+                            </div>
+                            
+                            <div class="table-container">
+                                <table id="products-table">
+                                    <thead>
+                                        <tr>
+                                            <th>商品名称</th>
+                                            <th>分类</th>
+                                            <th>库存数量</th>
+                                            <th>操作</th>
+                                            <th>备注</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="empty-state">
+                                                <i class="fas fa-box-open"></i>
+                                                <p>暂无商品数据</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 入库管理页面内容 -->
+                    <div id="inbound-page" class="page">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">入库管理</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">选择商品</label>
+                                <select class="form-control" id="inbound-product-select">
+                                    <option value="">- 选择商品 -</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">入库数量</label>
+                                <input type="number" class="form-control" id="inbound-quantity" min="1" value="1">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">有效期至</label>
+                                <input type="date" class="form-control" id="inbound-expiry">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">备注</label>
+                                <textarea class="form-control" id="inbound-remark" rows="3" placeholder="可填写入库原因、供应商等信息"></textarea>
+                            </div>
+                            
+                            <button class="btn" id="confirm-inbound"><i class="fas fa-check"></i> 确认入库</button>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">入库记录</div>
+                            </div>
+                            
+                            <div class="table-container">
+                                <table id="inbound-records-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>商品</th>
+                                            <th>数量</th>
+                                            <th>有效期</th>
+                                            <th>操作员工</th>
+                                            <th>备注</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="7" class="empty-state">
+                                                <i class="fas fa-history"></i>
+                                                <p>暂无入库记录</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 出库管理页面内容 -->
+                    <div id="outbound-page" class="page">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">出库管理</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">选择商品</label>
+                                <select class="form-control" id="outbound-product-select">
+                                    <option value="">- 选择商品 -</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="batch-selection-container" style="display: none;">
+                                <label class="form-label">选择批次</label>
+                                <div id="batch-selection">
+                                    <!-- 批次选择区域将通过JavaScript动态生成 -->
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">出库数量</label>
+                                <input type="number" class="form-control" id="outbound-quantity" min="1" value="1">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">出库原因</label>
+                                <select class="form-control" id="outbound-reason">
+                                    <option value="销售">销售</option>
+                                    <option value="调拨">调拨</option>
+                                    <option value="损耗">损耗</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">备注</label>
+                                <textarea class="form-control" id="outbound-remark" rows="3" placeholder="可填写出库详情"></textarea>
+                            </div>
+                            
+                            <button class="btn" id="confirm-outbound"><i class="fas fa-check"></i> 确认出库</button>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">出库记录</div>
+                            </div>
+                            
+                            <div class="table-container">
+                                <table id="outbound-records-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>商品</th>
+                                            <th>数量</th>
+                                            <th>操作员工</th>
+                                            <th>原因</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="6" class="empty-state">
+                                                <i class="fas fa-history"></i>
+                                                <p>暂无出库记录</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 过期商品页面内容 -->
+                    <div id="expired-page" class="page">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">过期商品管理</div>
+                                <button class="btn btn-danger" id="destroy-all-expired"><i class="fas fa-trash"></i> 销毁所有过期批次</button>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <button class="filter-btn active" data-type="expired">已过期商品</button>
+                                <button class="filter-btn" data-type="expiring">即将过期商品</button>
+                            </div>
+                            
+                            <div class="table-container">
+                                <table id="expired-products-table">
+                                    <thead>
+                                        <tr>
+                                            <th>商品名称</th>
+                                            <th>分类</th>
+                                            <th>过期批次</th>
+                                            <th>过期天数</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="empty-state">
+                                                <i class="fas fa-check-circle"></i>
+                                                <p>暂无已过期商品</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作记录页面内容 -->
+                    <div id="records-page" class="page">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">操作记录</div>
+                            </div>
+                            
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" class="form-control" id="record-search" placeholder="输入商品名称筛选...">
+                                <div id="record-search-autocomplete" class="autocomplete-list"></div>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <button class="filter-btn active" data-type="all">所有记录</button>
+                                <button class="filter-btn" data-type="inbound">入库记录</button>
+                                <button class="filter-btn" data-type="outbound">出库记录</button>
+                                <button class="filter-btn" data-type="adjustment">库存调整</button>
+                            </div>
+                            
+                            <button class="btn" id="clear-filters"><i class="fas fa-times"></i> 清除筛选</button>
+                            
+                            <div class="table-container">
+                                <table id="records-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>类型</th>
+                                            <th>商品</th>
+                                            <th>数量</th>
+                                            <th>有效期</th>
+                                            <th>操作员工</th>
+                                            <th>详情</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="8" class="empty-state">
+                                                <i class="fas fa-history"></i>
+                                                <p>暂无操作记录</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 添加商品 -->
+        <div id="add-product-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">添加商品</div>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group autocomplete-container">
+                        <label class="form-label">商品名称</label>
+                        <input type="text" class="form-control" id="new-product-name" placeholder="输入商品名称">
+                        <div id="new-product-autocomplete" class="autocomplete-list"></div>
+                        <div id="product-name-error" class="error-message" style="color: var(--danger-color); display: none;">商品名称已存在</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">商品分类</label>
+                        <select class="form-control" id="new-product-category">
+                            <option value="">- 选择分类 -</option>
+                            <option value="甜品">甜品</option>
+                            <option value="服务用品">服务用品</option>
+                            <option value="食品">食品</option>
+                            <option value="饮品">饮品</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">最低库存预警</label>
+                        <input type="number" class="form-control" id="new-product-min-stock" min="0" value="5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">商品描述</label>
+                        <textarea class="form-control" id="new-product-description" rows="3" placeholder="可选"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="cancel-add-product">取消</button>
+                    <button class="btn btn-success" id="save-product">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 编辑商品 -->
+        <div id="edit-product-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">编辑商品</div>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-product-id">
+                    <div class="form-group">
+                        <label class="form-label">商品名称</label>
+                        <input type="text" class="form-control" id="edit-product-name" placeholder="输入商品名称">
+                        <div id="edit-product-name-error" class="error-message" style="color: var(--danger-color); display: none;">商品名称已存在</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">商品分类</label>
+                        <select class="form-control" id="edit-product-category">
+                            <option value="">- 选择分类 -</option>
+                            <option value="甜品">甜品</option>
+                            <option value="服务用品">服务用品</option>
+                            <option value="食品">食品</option>
+                            <option value="饮品">饮品</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">最低库存预警</label>
+                        <input type="number" class="form-control" id="edit-product-min-stock" min="0" value="5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">商品描述</label>
+                        <textarea class="form-control" id="edit-product-description" rows="3" placeholder="可选"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="cancel-edit-product">取消</button>
+                    <button class="btn btn-success" id="update-product">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 查看批次 -->
+        <div id="view-batches-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">商品批次详情</div>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="batch-info">
+                        <!-- 批次信息将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="close-batches-modal">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 销毁确认 -->
+        <div id="destroy-confirm-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">确认销毁</div>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要销毁此批次吗？此操作不可逆。</p>
+                    <p id="destroy-batch-details"></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="cancel-destroy">取消</button>
+                    <button class="btn btn-danger" id="confirm-destroy">确认销毁</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通知 -->
+        <div id="notification" class="notification">
+            <i class="fas fa-check-circle"></i>
+            <span id="notification-message">操作成功</span>
+        </div>
+
+        <!-- 离线提示 -->
+        <div id="offline-indicator" class="offline-indicator">
+            <i class="fas fa-wifi"></i> 当前处于离线状态
+        </div>
+    </div>
+
+    <script>
+        // Supabase配置
+        const SUPABASE_URL = 'https://xrymwwnfanfrycyauujo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyeW13d25mYW5mcnljeWF1dWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODM5MjYsImV4cCI6MjA3NTI1OTkyNn0.4WnQ9ylp3ngojjS_3FrEhcpQitz9jpzwToESu4uhyac';
+
+        // 初始化Supabase客户端
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 用户数据
+        const users = {
+            '124391': { name: '刘晓楠', avatar: '刘' },
+            '124576': { name: '刘玥', avatar: '刘' },
+            '124022': { name: '陈会慧', avatar: '陈' }
+        };
+        const defaultPassword = '123456';
+
+        // 全局变量
+        let currentPage = 'dashboard';
+        let products = [];
+        let batches = [];
+        let transactions = [];
+        let currentDestroyBatchId = null;
+        let currentUser = null;
+
+        // 缓存数据
+        let dataCache = {
+            products: null,
+            batches: null,
+            transactions: null,
+            lastUpdated: null
+        };
+
+        // DOM加载完成后初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            checkLoginStatus();
+        });
+
+        // 初始化应用
+        function initializeApp() {
+            // 设置当前日期为有效期默认值
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.getElementById('inbound-expiry').value = formattedDate;
+        }
+
+        // 检查登录状态
+        function checkLoginStatus() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            } else {
+                showLogin();
+            }
+        }
+
+        // 显示登录页面
+        function showLogin() {
+            document.getElementById('login-page').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+        }
+
+        // 显示主应用
+        function showApp() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            
+            // 更新用户信息
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('user-avatar').textContent = currentUser.avatar;
+            
+            // 加载仪表板数据
+            loadDashboardData();
+            checkOnlineStatus();
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 登录表单提交
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            // 退出登录
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                currentUser = null;
+                showLogin();
+            });
+
+            // 导航菜单点击事件
+            document.querySelectorAll('.nav-links li').forEach(item => {
+                item.addEventListener('click', function() {
+                    const page = this.getAttribute('data-page');
+                    switchPage(page);
+                });
+            });
+
+            // 添加商品按钮
+            document.getElementById('add-product-btn').addEventListener('click', function() {
+                document.getElementById('add-product-modal').style.display = 'flex';
+            });
+
+            // 关闭模态框
+            document.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+
+            // 取消添加商品
+            document.getElementById('cancel-add-product').addEventListener('click', function() {
+                document.getElementById('add-product-modal').style.display = 'none';
+            });
+
+            // 取消编辑商品
+            document.getElementById('cancel-edit-product').addEventListener('click', function() {
+                document.getElementById('edit-product-modal').style.display = 'none';
+            });
+
+            // 关闭批次模态框
+            document.getElementById('close-batches-modal').addEventListener('click', function() {
+                document.getElementById('view-batches-modal').style.display = 'none';
+            });
+
+            // 取消销毁
+            document.getElementById('cancel-destroy').addEventListener('click', function() {
+                document.getElementById('destroy-confirm-modal').style.display = 'none';
+                currentDestroyBatchId = null;
+            });
+
+            // 保存商品
+            document.getElementById('save-product').addEventListener('click', saveProduct);
+
+            // 更新商品
+            document.getElementById('update-product').addEventListener('click', updateProduct);
+
+            // 确认入库
+            document.getElementById('confirm-inbound').addEventListener('click', confirmInbound);
+
+            // 确认出库
+            document.getElementById('confirm-outbound').addEventListener('click', confirmOutbound);
+
+            // 销毁所有过期批次
+            document.getElementById('destroy-all-expired').addEventListener('click', function() {
+                if (confirm('确定要销毁所有过期批次吗？此操作不可逆。')) {
+                    destroyAllExpired();
+                }
+            });
+
+            // 确认销毁
+            document.getElementById('confirm-destroy').addEventListener('click', function() {
+                if (currentDestroyBatchId) {
+                    destroyBatch(currentDestroyBatchId);
+                    document.getElementById('destroy-confirm-modal').style.display = 'none';
+                    currentDestroyBatchId = null;
+                }
+            });
+
+            // 商品名称输入验证
+            document.getElementById('new-product-name').addEventListener('input', checkProductName);
+
+            // 编辑商品名称输入验证
+            document.getElementById('edit-product-name').addEventListener('input', checkEditProductName);
+
+            // 商品搜索
+            document.getElementById('product-search').addEventListener('input', function() {
+                filterProducts(this.value);
+                showAutocomplete(this.value, 'product-search');
+            });
+
+            // 记录搜索
+            document.getElementById('record-search').addEventListener('input', function() {
+                filterRecords();
+                showAutocomplete(this.value, 'record-search');
+            });
+
+            // 添加商品名称自动补全
+            document.getElementById('new-product-name').addEventListener('input', function() {
+                showAutocomplete(this.value, 'new-product');
+            });
+
+            // 入库商品选择
+            document.getElementById('inbound-product-select').addEventListener('change', function() {
+                // 重置表单
+                document.getElementById('inbound-quantity').value = '1';
+                document.getElementById('inbound-remark').value = '';
+            });
+
+            // 出库商品选择
+            document.getElementById('outbound-product-select').addEventListener('change', function() {
+                const productId = this.value;
+                if (productId) {
+                    showBatchSelection(productId);
+                } else {
+                    document.getElementById('batch-selection-container').style.display = 'none';
+                }
+            });
+
+            // 分类筛选
+            document.querySelectorAll('.filter-btn[data-category]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn[data-category]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    filterProductsByCategory(this.getAttribute('data-category'));
+                });
+            });
+
+            // 类型筛选
+            document.querySelectorAll('.filter-btn[data-type]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn[data-type]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const type = this.getAttribute('data-type');
+                    if (currentPage === 'expired') {
+                        filterExpiredProducts(type);
+                    } else if (currentPage === 'records') {
+                        filterRecords(type);
+                    }
+                });
+            });
+
+            // 清除筛选
+            document.getElementById('clear-filters').addEventListener('click', function() {
+                document.getElementById('record-search').value = '';
+                document.querySelectorAll('.filter-btn[data-type]').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.filter-btn[data-type="all"]').classList.add('active');
+                loadRecords();
+            });
+
+            // 监听网络状态
+            window.addEventListener('online', function() {
+                document.getElementById('offline-indicator').style.display = 'none';
+                showNotification('网络连接已恢复', 'success');
+            });
+
+            window.addEventListener('offline', function() {
+                document.getElementById('offline-indicator').style.display = 'block';
+                showNotification('网络连接已断开', 'warning');
+            });
+
+            // 点击页面其他区域时隐藏自动补全列表
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.autocomplete-container')) {
+                    hideAllAutocompleteLists();
+                }
+            });
+        }
+
+        // 处理登录
+        function handleLogin() {
+            const employeeId = document.getElementById('employee-id').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('login-error');
+
+            // 验证工号和密码
+            if (users[employeeId] && password === defaultPassword) {
+                currentUser = {
+                    id: employeeId,
+                    name: users[employeeId].name,
+                    avatar: users[employeeId].avatar
+                };
+                
+                // 保存登录状态
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // 显示主应用
+                showApp();
+                
+                // 重置表单
+                document.getElementById('login-form').reset();
+                errorElement.style.display = 'none';
+            } else {
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // 切换页面
+        function switchPage(page) {
+            // 更新导航菜单
+            document.querySelectorAll('.nav-links li').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-page') === page) {
+                    item.classList.add('active');
+                }
+            });
+
+            // 更新页面标题
+            const pageTitles = {
+                'dashboard': '库存概览',
+                'products': '商品管理',
+                'inbound': '入库管理',
+                'outbound': '出库管理',
+                'expired': '过期商品',
+                'records': '操作记录'
+            };
+            document.getElementById('page-title').textContent = pageTitles[page];
+
+            // 隐藏所有页面内容
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+
+            // 显示当前页面内容
+            document.getElementById(`${page}-page`).classList.add('active');
+
+            // 加载对应页面数据
+            currentPage = page;
+            switch(page) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'products':
+                    loadProducts();
+                    break;
+                case 'inbound':
+                    loadInboundRecords();
+                    populateProductSelects();
+                    break;
+                case 'outbound':
+                    loadOutboundRecords();
+                    populateProductSelects();
+                    break;
+                case 'expired':
+                    loadExpiredProducts();
+                    break;
+                case 'records':
+                    loadRecords();
+                    break;
+            }
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.className = `notification ${type}`;
+            document.getElementById('notification-message').textContent = message;
+            
+            // 更新图标
+            const icon = notification.querySelector('i');
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 
+                            type === 'error' ? 'fas fa-exclamation-circle' : 
+                            'fas fa-exclamation-triangle';
+            
+            notification.classList.add('show');
+            
+            // 1.5秒后消失
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 1500);
+        }
+
+        // 检查网络状态
+        function checkOnlineStatus() {
+            if (!navigator.onLine) {
+                document.getElementById('offline-indicator').style.display = 'block';
+            }
+        }
+
+        // 加载仪表板数据
+        async function loadDashboardData() {
+            try {
+                // 获取商品数据
+                const { data: productsData, error: productsError } = await supabaseClient
+                    .from('products')
+                    .select('*');
+                
+                if (productsError) throw productsError;
+                
+                // 获取批次数据
+                const { data: batchesData, error: batchesError } = await supabaseClient
+                    .from('batches')
+                    .select('*');
+                
+                if (batchesError) throw batchesError;
+                
+                // 获取交易记录
+                const { data: transactionsData, error: transactionsError } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (transactionsError) throw transactionsError;
+                
+                // 更新缓存
+                dataCache.products = productsData;
+                dataCache.batches = batchesData;
+                dataCache.transactions = transactionsData;
+                dataCache.lastUpdated = new Date();
+                
+                // 更新统计信息
+                updateDashboardStats(productsData, batchesData);
+                
+                // 更新库存预警
+                updateStockWarnings(productsData, batchesData);
+                
+                // 更新最近活动
+                updateRecentActivities(transactionsData);
+                
+            } catch (error) {
+                console.error('加载仪表板数据错误:', error);
+                showNotification('加载数据失败', 'error');
+            }
+        }
+
+        // 更新仪表板统计信息
+        function updateDashboardStats(products, batches) {
+            // 商品种类
+            document.getElementById('product-types').textContent = products.length;
+            
+            // 库存总量
+            const totalStock = batches.reduce((sum, batch) => sum + batch.quantity, 0);
+            document.getElementById('total-stock').textContent = totalStock;
+            
+            // 低库存商品
+            const lowStockProducts = products.filter(product => {
+                const productBatches = batches.filter(batch => batch.product_id === product.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                return totalQuantity <= product.min_stock;
+            });
+            document.getElementById('low-stock').textContent = lowStockProducts.length;
+            
+            // 库存预警商品
+            const warningStockProducts = products.filter(product => {
+                const productBatches = batches.filter(batch => batch.product_id === product.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                return totalQuantity > product.min_stock && totalQuantity <= product.min_stock * 1.5;
+            });
+            document.getElementById('warning-stock').textContent = warningStockProducts.length;
+        }
+
+        // 更新库存预警
+        function updateStockWarnings(products, batches) {
+            const warningsContainer = document.getElementById('stock-warnings');
+            
+            // 查找低库存商品
+            const lowStockProducts = products.filter(product => {
+                const productBatches = batches.filter(batch => batch.product_id === product.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                return totalQuantity <= product.min_stock;
+            });
+            
+            if (lowStockProducts.length === 0) {
+                warningsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>暂无低库存商品</p>
+                    </div>
+                `;
+            } else {
+                let warningsHTML = '';
+                lowStockProducts.forEach(product => {
+                    const productBatches = batches.filter(batch => batch.product_id === product.id);
+                    const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                    
+                    warningsHTML += `
+                        <div class="warning-item" style="padding: 10px; border-left: 4px solid var(--warning-color); margin-bottom: 10px; background-color: rgba(246, 185, 59, 0.1);">
+                            <i class="fas fa-exclamation-triangle warning"></i>
+                            <span>${product.name} 库存仅剩 ${totalQuantity}，低于预警值 ${product.min_stock}</span>
+                        </div>
+                    `;
+                });
+                warningsContainer.innerHTML = warningsHTML;
+            }
+        }
+
+        // 更新最近活动
+        function updateRecentActivities(transactions) {
+            const activitiesContainer = document.getElementById('recent-activities');
+            
+            if (transactions.length === 0) {
+                activitiesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <p>暂无最近活动</p>
+                    </div>
+                `;
+            } else {
+                let activitiesHTML = '';
+                transactions.forEach(transaction => {
+                    const typeText = transaction.type === 'inbound' ? '入库' : 
+                                   transaction.type === 'outbound' ? '出库' : '调整';
+                    const date = new Date(transaction.created_at).toLocaleString();
+                    const typeClass = transaction.type === 'inbound' ? 'success' : 'danger';
+                    
+                    activitiesHTML += `
+                        <div class="activity-item" style="padding: 10px; border-left: 4px solid var(--${typeClass}-color); margin-bottom: 10px; background-color: rgba(120, 224, 143, 0.1);">
+                            <i class="fas fa-${transaction.type === 'inbound' ? 'arrow-down' : 'arrow-up'} ${typeClass}"></i>
+                            <span>${date} - ${transaction.product_name} ${typeText} ${transaction.quantity}件</span>
+                        </div>
+                    `;
+                });
+                activitiesContainer.innerHTML = activitiesHTML;
+            }
+        }
+
+        // 加载商品数据
+        async function loadProducts() {
+            try {
+                // 如果缓存中有数据且不超过5分钟，使用缓存
+                if (dataCache.products && dataCache.lastUpdated && (new Date() - dataCache.lastUpdated) < 300000) {
+                    products = dataCache.products;
+                    batches = dataCache.batches;
+                    displayProducts(dataCache.products);
+                    return;
+                }
+                
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .order('name');
+                
+                if (error) throw error;
+                
+                products = data;
+                displayProducts(data);
+                
+            } catch (error) {
+                console.error('加载商品数据错误:', error);
+                showNotification('加载商品数据失败', 'error');
+            }
+        }
+
+        // 显示商品列表
+        function displayProducts(products) {
+            const tbody = document.querySelector('#products-table tbody');
+            
+            if (products.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <p>暂无商品数据</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            products.forEach(product => {
+                // 计算商品总库存
+                const productBatches = batches.filter(batch => batch.product_id === product.id);
+                const totalQuantity = productBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+                
+                // 确定库存状态
+                let stockStatus = '';
+                if (totalQuantity <= product.min_stock) {
+                    stockStatus = `<span class="tag tag-danger">低库存</span>`;
+                } else if (totalQuantity <= product.min_stock * 1.5) {
+                    stockStatus = `<span class="tag tag-warning">预警</span>`;
+                }
+                
+                html += `
+                    <tr>
+                        <td>${product.name} ${stockStatus}</td>
+                        <td>${product.category}</td>
+                        <td>${totalQuantity}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm" onclick="editProduct(${product.id})">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                            <button class="btn btn-sm" onclick="viewBatches(${product.id})">
+                                <i class="fas fa-eye"></i> 查看批次
+                            </button>
+                        </td>
+                        <td>${product.description || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        // 编辑商品
+        async function editProduct(productId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .eq('id', productId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // 填充表单
+                document.getElementById('edit-product-id').value = data.id;
+                document.getElementById('edit-product-name').value = data.name;
+                document.getElementById('edit-product-category').value = data.category;
+                document.getElementById('edit-product-min-stock').value = data.min_stock;
+                document.getElementById('edit-product-description').value = data.description || '';
+                
+                // 显示模态框
+                document.getElementById('edit-product-modal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('加载商品数据错误:', error);
+                showNotification('加载商品数据失败', 'error');
+            }
+        }
+
+        // 删除商品
+        async function deleteProduct(productId) {
+            if (!confirm('确定要删除此商品吗？此操作不可逆。')) {
+                return;
+            }
+            
+            try {
+                // 检查商品是否有库存
+                const { data: batchesData, error: batchesError } = await supabaseClient
+                    .from('batches')
+                    .select('quantity')
+                    .eq('product_id', productId);
+                
+                if (batchesError) throw batchesError;
+                
+                const totalQuantity = batchesData.reduce((sum, batch) => sum + batch.quantity, 0);
+                
+                if (totalQuantity > 0) {
+                    showNotification('无法删除有库存的商品', 'error');
+                    return;
+                }
+                
+                // 删除商品
+                const { error } = await supabaseClient
+                    .from('products')
+                    .delete()
+                    .eq('id', productId);
+                
+                if (error) throw error;
+                
+                showNotification('商品删除成功');
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 重新加载商品列表
+                loadProducts();
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('删除商品错误:', error);
+                showNotification('删除商品失败', 'error');
+            }
+        }
+
+        // 查看商品批次
+        async function viewBatches(productId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('batches')
+                    .select('*')
+                    .eq('product_id', productId)
+                    .order('expiry_date', { ascending: true });
+                
+                if (error) throw error;
+                
+                const product = products.find(p => p.id === productId);
+                let batchesHTML = `
+                    <h3>${product.name} - 批次详情</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>批次ID</th>
+                                    <th>入库日期</th>
+                                    <th>有效期</th>
+                                    <th>数量</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                if (data.length === 0) {
+                    batchesHTML += `
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <i class="fas fa-box-open"></i>
+                                <p>暂无批次数据</p>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    data.forEach(batch => {
+                        const today = new Date();
+                        const expiryDate = new Date(batch.expiry_date);
+                        const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                        
+                        let status = '';
+                        if (batch.quantity === 0) {
+                            status = '<span class="tag">已用完</span>';
+                        } else if (daysUntilExpiry < 0) {
+                            status = '<span class="tag tag-danger">已过期</span>';
+                        } else if (daysUntilExpiry <= 7) {
+                            status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
+                        } else {
+                            status = '<span class="tag tag-success">正常</span>';
+                        }
+                        
+                        batchesHTML += `
+                            <tr>
+                                <td>${batch.id}</td>
+                                <td>${new Date(batch.created_at).toLocaleDateString()}</td>
+                                <td>${batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '无'}</td>
+                                <td>${batch.quantity}</td>
+                                <td>${status}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                batchesHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('batch-info').innerHTML = batchesHTML;
+                document.getElementById('view-batches-modal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('查看批次错误:', error);
+                showNotification('加载批次数据失败', 'error');
+            }
+        }
+
+        // 填充商品选择下拉框
+        async function populateProductSelects() {
+            try {
+                // 如果缓存中有数据且不超过5分钟，使用缓存
+                if (dataCache.products && dataCache.lastUpdated && (new Date() - dataCache.lastUpdated) < 300000) {
+                    products = dataCache.products;
+                    displayProductSelects(products);
+                    return;
+                }
+                
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .order('name');
+                
+                if (error) throw error;
+                
+                products = data;
+                displayProductSelects(data);
+                
+            } catch (error) {
+                console.error('加载商品数据错误:', error);
+                showNotification('加载商品数据失败', 'error');
+            }
+        }
+
+        // 显示商品选择下拉框
+        function displayProductSelects(products) {
+            // 填充入库商品选择
+            const inboundSelect = document.getElementById('inbound-product-select');
+            inboundSelect.innerHTML = '<option value="">- 选择商品 -</option>';
+            products.forEach(product => {
+                inboundSelect.innerHTML += `<option value="${product.id}">${product.name}</option>`;
+            });
+            
+            // 填充出库商品选择
+            const outboundSelect = document.getElementById('outbound-product-select');
+            outboundSelect.innerHTML = '<option value="">- 选择商品 -</option>';
+            products.forEach(product => {
+                outboundSelect.innerHTML += `<option value="${product.id}">${product.name}</option>`;
+            });
+        }
+
+        // 显示批次选择
+        async function showBatchSelection(productId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('batches')
+                    .select('*')
+                    .eq('product_id', productId)
+                    .gt('quantity', 0)
+                    .order('expiry_date', { ascending: true });
+                
+                if (error) throw error;
+                
+                let batchSelectionHTML = '';
+                
+                if (data.length === 0) {
+                    batchSelectionHTML = '<p>该商品暂无可用批次</p>';
+                    document.getElementById('batch-selection-container').style.display = 'none';
+                } else {
+                    data.forEach(batch => {
+                        const today = new Date();
+                        const expiryDate = new Date(batch.expiry_date);
+                        const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                        
+                        let status = '';
+                        if (daysUntilExpiry < 0) {
+                            status = '<span class="tag tag-danger">已过期</span>';
+                        } else if (daysUntilExpiry <= 7) {
+                            status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
+                        } else {
+                            status = '<span class="tag tag-success">正常</span>';
+                        }
+                        
+                        batchSelectionHTML += `
+                            <div class="batch-option">
+                                <label>
+                                    <input type="radio" name="selected-batch" value="${batch.id}" data-quantity="${batch.quantity}">
+                                    批次 ${batch.id} - 有效期: ${batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '无'} - 
+                                    数量: ${batch.quantity} - ${status}
+                                </label>
+                            </div>
+                        `;
+                    });
+                    
+                    document.getElementById('batch-selection-container').style.display = 'block';
+                }
+                
+                document.getElementById('batch-selection').innerHTML = batchSelectionHTML;
+                
+            } catch (error) {
+                console.error('加载批次选择错误:', error);
+                showNotification('加载批次数据失败', 'error');
+            }
+        }
+
+        // 检查商品名称是否重复
+        async function checkProductName() {
+            const productName = document.getElementById('new-product-name').value;
+            const errorElement = document.getElementById('product-name-error');
+            
+            if (!productName) {
+                errorElement.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('id')
+                    .eq('name', productName)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+                
+                if (data) {
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('检查商品名称错误:', error);
+            }
+        }
+
+        // 检查编辑商品名称是否重复
+        async function checkEditProductName() {
+            const productName = document.getElementById('edit-product-name').value;
+            const productId = document.getElementById('edit-product-id').value;
+            const errorElement = document.getElementById('edit-product-name-error');
+            
+            if (!productName) {
+                errorElement.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('id')
+                    .eq('name', productName)
+                    .neq('id', productId)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+                
+                if (data) {
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('检查商品名称错误:', error);
+            }
+        }
+
+        // 保存商品
+        async function saveProduct() {
+            const name = document.getElementById('new-product-name').value;
+            const category = document.getElementById('new-product-category').value;
+            const minStock = parseInt(document.getElementById('new-product-min-stock').value);
+            const description = document.getElementById('new-product-description').value;
+            
+            // 验证输入
+            if (!name) {
+                showNotification('请输入商品名称', 'error');
+                return;
+            }
+            
+            if (!category) {
+                showNotification('请选择商品分类', 'error');
+                return;
+            }
+            
+            // 检查商品名称是否重复
+            const errorElement = document.getElementById('product-name-error');
+            if (errorElement.style.display === 'block') {
+                showNotification('商品名称已存在', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .insert([
+                        {
+                            name: name,
+                            category: category,
+                            min_stock: minStock,
+                            description: description
+                        }
+                    ])
+                    .select();
+                
+                if (error) throw error;
+                
+                // 关闭模态框
+                document.getElementById('add-product-modal').style.display = 'none';
+                
+                // 重置表单
+                document.getElementById('new-product-name').value = '';
+                document.getElementById('new-product-category').value = '';
+                document.getElementById('new-product-min-stock').value = '5';
+                document.getElementById('new-product-description').value = '';
+                document.getElementById('product-name-error').style.display = 'none';
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('商品添加成功');
+                
+                // 重新加载商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品选择下拉框
+                if (currentPage === 'inbound' || currentPage === 'outbound') {
+                    populateProductSelects();
+                }
+                
+            } catch (error) {
+                console.error('保存商品错误:', error);
+                showNotification('添加商品失败', 'error');
+            }
+        }
+
+        // 更新商品
+        async function updateProduct() {
+            const id = document.getElementById('edit-product-id').value;
+            const name = document.getElementById('edit-product-name').value;
+            const category = document.getElementById('edit-product-category').value;
+            const minStock = parseInt(document.getElementById('edit-product-min-stock').value);
+            const description = document.getElementById('edit-product-description').value;
+            
+            // 验证输入
+            if (!name) {
+                showNotification('请输入商品名称', 'error');
+                return;
+            }
+            
+            if (!category) {
+                showNotification('请选择商品分类', 'error');
+                return;
+            }
+            
+            // 检查商品名称是否重复
+            const errorElement = document.getElementById('edit-product-name-error');
+            if (errorElement.style.display === 'block') {
+                showNotification('商品名称已存在', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .update({
+                        name: name,
+                        category: category,
+                        min_stock: minStock,
+                        description: description
+                    })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                // 关闭模态框
+                document.getElementById('edit-product-modal').style.display = 'none';
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('商品更新成功');
+                
+                // 重新加载商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品选择下拉框
+                if (currentPage === 'inbound' || currentPage === 'outbound') {
+                    populateProductSelects();
+                }
+                
+            } catch (error) {
+                console.error('更新商品错误:', error);
+                showNotification('更新商品失败', 'error');
+            }
+        }
+
+        // 确认入库
+        async function confirmInbound() {
+            const productId = document.getElementById('inbound-product-select').value;
+            const quantity = parseInt(document.getElementById('inbound-quantity').value);
+            const expiryDate = document.getElementById('inbound-expiry').value;
+            const remark = document.getElementById('inbound-remark').value;
+            
+            // 验证输入
+            if (!productId) {
+                showNotification('请选择商品', 'error');
+                return;
+            }
+            
+            const product = products.find(p => p.id == productId);
+            if (!product) {
+                showNotification('商品不存在', 'error');
+                return;
+            }
+            
+            if (isNaN(quantity) || quantity <= 0) {
+                showNotification('请输入有效的入库数量', 'error');
+                return;
+            }
+            
+            try {
+                // 创建批次
+                const { data: batchData, error: batchError } = await supabaseClient
+                    .from('batches')
+                    .insert([
+                        {
+                            product_id: productId,
+                            quantity: quantity,
+                            expiry_date: expiryDate || null
+                        }
+                    ])
+                    .select();
+                
+                if (batchError) throw batchError;
+                
+                // 创建入库记录
+                const { error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .insert([
+                        {
+                            type: 'inbound',
+                            product_id: productId,
+                            product_name: product.name,
+                            batch_id: batchData[0].id,
+                            quantity: quantity,
+                            operator: currentUser.name,
+                            remark: remark
+                        }
+                    ]);
+                
+                if (transactionError) throw transactionError;
+                
+                // 重置表单
+                document.getElementById('inbound-product-select').value = '';
+                document.getElementById('inbound-quantity').value = '1';
+                document.getElementById('inbound-remark').value = '';
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('入库操作成功');
+                
+                // 重新加载入库记录
+                if (currentPage === 'inbound') {
+                    loadInboundRecords();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+            } catch (error) {
+                console.error('入库操作错误:', error);
+                showNotification('入库操作失败', 'error');
+            }
+        }
+
+        // 确认出库
+        async function confirmOutbound() {
+            const productId = document.getElementById('outbound-product-select').value;
+            const selectedBatch = document.querySelector('input[name="selected-batch"]:checked');
+            const quantity = parseInt(document.getElementById('outbound-quantity').value);
+            const reason = document.getElementById('outbound-reason').value;
+            const remark = document.getElementById('outbound-remark').value;
+            
+            // 验证输入
+            if (!productId) {
+                showNotification('请选择商品', 'error');
+                return;
+            }
+            
+            if (!selectedBatch) {
+                showNotification('请选择批次', 'error');
+                return;
+            }
+            
+            const batchId = selectedBatch.value;
+            const batchQuantity = parseInt(selectedBatch.getAttribute('data-quantity'));
+            
+            if (isNaN(quantity) || quantity <= 0) {
+                showNotification('请输入有效的出库数量', 'error');
+                return;
+            }
+            
+            if (quantity > batchQuantity) {
+                showNotification('出库数量不能超过批次库存数量', 'error');
+                return;
+            }
+            
+            const product = products.find(p => p.id == productId);
+            if (!product) {
+                showNotification('商品不存在', 'error');
+                return;
+            }
+            
+            try {
+                // 更新批次数量
+                const newQuantity = batchQuantity - quantity;
+                const { error: batchError } = await supabaseClient
+                    .from('batches')
+                    .update({ quantity: newQuantity })
+                    .eq('id', batchId);
+                
+                if (batchError) throw batchError;
+                
+                // 创建出库记录
+                const { error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .insert([
+                        {
+                            type: 'outbound',
+                            product_id: productId,
+                            product_name: product.name,
+                            batch_id: batchId,
+                            quantity: quantity,
+                            operator: currentUser.name,
+                            reason: reason,
+                            remark: remark
+                        }
+                    ]);
+                
+                if (transactionError) throw transactionError;
+                
+                // 重置表单
+                document.getElementById('outbound-product-select').value = '';
+                document.getElementById('batch-selection-container').style.display = 'none';
+                document.getElementById('outbound-quantity').value = '1';
+                document.getElementById('outbound-remark').value = '';
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('出库操作成功');
+                
+                // 重新加载出库记录
+                if (currentPage === 'outbound') {
+                    loadOutboundRecords();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+            } catch (error) {
+                console.error('出库操作错误:', error);
+                showNotification('出库操作失败', 'error');
+            }
+        }
+
+        // 加载入库记录
+        async function loadInboundRecords() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select(`
+                        *,
+                        batches!inner (
+                            expiry_date
+                        )
+                    `)
+                    .eq('type', 'inbound')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                displayInboundRecords(data);
+                
+            } catch (error) {
+                console.error('加载入库记录错误:', error);
+                showNotification('加载入库记录失败', 'error');
+            }
+        }
+
+        // 显示入库记录
+        function displayInboundRecords(records) {
+            const tbody = document.querySelector('#inbound-records-table tbody');
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <p>暂无入库记录</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            records.forEach(record => {
+                // 获取批次的有效期
+                const expiryDate = record.batches && record.batches.expiry_date;
+                const expiryDisplay = expiryDate ? new Date(expiryDate).toLocaleDateString() : '-';
+                
+                html += `
+                    <tr>
+                        <td>${new Date(record.created_at).toLocaleDateString()}</td>
+                        <td>${record.product_name}</td>
+                        <td>${record.quantity}</td>
+                        <td>${expiryDisplay}</td>
+                        <td>${record.operator}</td>
+                        <td>${record.remark || '-'}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-danger" onclick="undoTransaction(${record.id})">
+                                <i class="fas fa-undo"></i> 撤销
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        // 加载出库记录
+        async function loadOutboundRecords() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('type', 'outbound')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                displayOutboundRecords(data);
+                
+            } catch (error) {
+                console.error('加载出库记录错误:', error);
+                showNotification('加载出库记录失败', 'error');
+            }
+        }
+
+        // 显示出库记录
+        function displayOutboundRecords(records) {
+            const tbody = document.querySelector('#outbound-records-table tbody');
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <p>暂无出库记录</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            records.forEach(record => {
+                html += `
+                    <tr>
+                        <td>${new Date(record.created_at).toLocaleDateString()}</td>
+                        <td>${record.product_name}</td>
+                        <td>${record.quantity}</td>
+                        <td>${record.operator}</td>
+                        <td>${record.reason}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-danger" onclick="undoTransaction(${record.id})">
+                                <i class="fas fa-undo"></i> 撤销
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        // 撤销交易
+        async function undoTransaction(transactionId) {
+            if (!confirm('确定要撤销此操作吗？')) {
+                return;
+            }
+            
+            try {
+                // 获取交易详情
+                const { data: transaction, error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('id', transactionId)
+                    .single();
+                
+                if (transactionError) throw transactionError;
+                
+                if (transaction.type === 'inbound') {
+                    // 撤销入库操作：删除批次
+                    const { error: batchError } = await supabaseClient
+                        .from('batches')
+                        .delete()
+                        .eq('id', transaction.batch_id);
+                    
+                    if (batchError) throw batchError;
+                } else if (transaction.type === 'outbound') {
+                    // 撤销出库操作：恢复批次数量
+                    const { data: batch, error: batchError } = await supabaseClient
+                        .from('batches')
+                        .select('quantity')
+                        .eq('id', transaction.batch_id)
+                        .single();
+                    
+                    if (batchError) throw batchError;
+                    
+                    const newQuantity = batch.quantity + transaction.quantity;
+                    
+                    const { error: updateError } = await supabaseClient
+                        .from('batches')
+                        .update({ quantity: newQuantity })
+                        .eq('id', transaction.batch_id);
+                    
+                    if (updateError) throw updateError;
+                }
+                
+                // 删除交易记录
+                const { error: deleteError } = await supabaseClient
+                    .from('transactions')
+                    .delete()
+                    .eq('id', transactionId);
+                
+                if (deleteError) throw deleteError;
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                showNotification('操作已撤销');
+                
+                // 重新加载数据
+                if (currentPage === 'inbound') {
+                    loadInboundRecords();
+                } else if (currentPage === 'outbound') {
+                    loadOutboundRecords();
+                } else if (currentPage === 'records') {
+                    loadRecords();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+            } catch (error) {
+                console.error('撤销操作错误:', error);
+                showNotification('撤销操作失败', 'error');
+            }
+        }
+
+        // 加载过期商品
+        async function loadExpiredProducts() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // 获取已过期商品
+                const { data: expiredData, error: expiredError } = await supabaseClient
+                    .from('batches')
+                    .select(`
+                        *,
+                        products (
+                            name,
+                            category
+                        )
+                    `)
+                    .lt('expiry_date', today)
+                    .gt('quantity', 0);
+                
+                if (expiredError) throw expiredError;
+                
+                // 获取即将过期商品（7天内）
+                const nextWeek = new Date();
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                const nextWeekFormatted = nextWeek.toISOString().split('T')[0];
+                
+                const { data: expiringData, error: expiringError } = await supabaseClient
+                    .from('batches')
+                    .select(`
+                        *,
+                        products (
+                            name,
+                            category
+                        )
+                    `)
+                    .gte('expiry_date', today)
+                    .lte('expiry_date', nextWeekFormatted)
+                    .gt('quantity', 0);
+                
+                if (expiringError) throw expiringError;
+                
+                displayExpiredProducts(expiredData, expiringData);
+                
+            } catch (error) {
+                console.error('加载过期商品错误:', error);
+                showNotification('加载过期商品失败', 'error');
+            }
+        }
+
+        // 显示过期商品
+        function displayExpiredProducts(expired, expiring) {
+            const tbody = document.querySelector('#expired-products-table tbody');
+            
+            // 默认显示已过期商品
+            let displayData = expired;
+            let emptyMessage = '暂无已过期商品';
+            
+            // 检查当前选中的是哪个标签
+            const activeFilter = document.querySelector('.filter-btn[data-type].active');
+            if (activeFilter && activeFilter.getAttribute('data-type') === 'expiring') {
+                displayData = expiring;
+                emptyMessage = '暂无即将过期商品';
+            }
+            
+            if (displayData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>${emptyMessage}</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            displayData.forEach(batch => {
+                const today = new Date();
+                const expiryDate = new Date(batch.expiry_date);
+                const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                
+                html += `
+                    <tr>
+                        <td>${batch.products.name}</td>
+                        <td>${batch.products.category}</td>
+                        <td>${batch.quantity}</td>
+                        <td>${daysUntilExpiry < 0 ? Math.abs(daysUntilExpiry) : daysUntilExpiry}天</td>
+                        <td>
+                            ${daysUntilExpiry < 0 ? 
+                                `<button class="btn btn-sm btn-danger" onclick="showDestroyConfirm(${batch.id}, '${batch.products.name}', ${batch.quantity})">
+                                    <i class="fas fa-trash"></i> 销毁
+                                </button>` : 
+                                `<button class="btn btn-sm btn-warning" onclick="markAsExpiring(${batch.id})">
+                                    <i class="fas fa-exclamation-triangle"></i> 标记
+                                </button>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        // 显示销毁确认模态框
+        function showDestroyConfirm(batchId, productName, quantity) {
+            currentDestroyBatchId = batchId;
+            document.getElementById('destroy-batch-details').textContent = 
+                `商品: ${productName}, 数量: ${quantity}`;
+            document.getElementById('destroy-confirm-modal').style.display = 'flex';
+        }
+
+        // 销毁批次
+        async function destroyBatch(batchId) {
+            try {
+                // 获取批次详情
+                const { data: batchData, error: batchError } = await supabaseClient
+                    .from('batches')
+                    .select(`
+                        *,
+                        products (
+                            name
+                        )
+                    `)
+                    .eq('id', batchId)
+                    .single();
+                
+                if (batchError) throw batchError;
+                
+                // 创建销毁记录（出库记录）
+                const { error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .insert([
+                        {
+                            type: 'outbound',
+                            product_id: batchData.product_id,
+                            product_name: batchData.products.name,
+                            batch_id: batchId,
+                            quantity: batchData.quantity,
+                            operator: currentUser.name,
+                            reason: '过期销毁',
+                            remark: '批次过期，已销毁'
+                        }
+                    ]);
+                
+                if (transactionError) throw transactionError;
+                
+                // 更新批次数量为0
+                const { error: updateError } = await supabaseClient
+                    .from('batches')
+                    .update({ quantity: 0 })
+                    .eq('id', batchId);
+                
+                if (updateError) throw updateError;
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('批次销毁成功');
+                
+                // 重新加载过期商品
+                if (currentPage === 'expired') {
+                    loadExpiredProducts();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+            } catch (error) {
+                console.error('销毁批次错误:', error);
+                showNotification('销毁批次失败', 'error');
+            }
+        }
+
+        // 销毁所有过期批次
+        async function destroyAllExpired() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // 获取所有过期批次
+                const { data: expiredBatches, error: batchesError } = await supabaseClient
+                    .from('batches')
+                    .select(`
+                        *,
+                        products (
+                            name
+                        )
+                    `)
+                    .lt('expiry_date', today)
+                    .gt('quantity', 0);
+                
+                if (batchesError) throw batchesError;
+                
+                if (expiredBatches.length === 0) {
+                    showNotification('没有找到过期批次', 'warning');
+                    return;
+                }
+                
+                // 为每个过期批次创建销毁记录并更新数量
+                for (const batch of expiredBatches) {
+                    // 创建销毁记录
+                    await supabaseClient
+                        .from('transactions')
+                        .insert([
+                            {
+                                type: 'outbound',
+                                product_id: batch.product_id,
+                                product_name: batch.products.name,
+                                batch_id: batch.id,
+                                quantity: batch.quantity,
+                                operator: currentUser.name,
+                                reason: '过期销毁',
+                                remark: '批次过期，已销毁'
+                            }
+                        ]);
+                    
+                    // 更新批次数量为0
+                    await supabaseClient
+                        .from('batches')
+                        .update({ quantity: 0 })
+                        .eq('id', batch.id);
+                }
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification(`成功销毁 ${expiredBatches.length} 个过期批次`);
+                
+                // 重新加载过期商品
+                if (currentPage === 'expired') {
+                    loadExpiredProducts();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+                // 更新商品列表
+                if (currentPage === 'products') {
+                    loadProducts();
+                }
+                
+            } catch (error) {
+                console.error('销毁所有过期批次错误:', error);
+                showNotification('销毁过期批次失败', 'error');
+            }
+        }
+
+        // 标记为即将过期
+        async function markAsExpiring(batchId) {
+            // 这里可以添加标记逻辑，例如发送通知等
+            showNotification('批次已标记为即将过期', 'warning');
+        }
+
+        // 加载操作记录
+        async function loadRecords() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                displayRecords(data);
+                
+            } catch (error) {
+                console.error('加载操作记录错误:', error);
+                showNotification('加载操作记录失败', 'error');
+            }
+        }
+
+        // 显示操作记录
+        function displayRecords(records) {
+            const tbody = document.querySelector('#records-table tbody');
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <p>暂无操作记录</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            records.forEach(record => {
+                const typeText = record.type === 'inbound' ? '入库' : 
+                               record.type === 'outbound' ? '出库' : '调整';
+                               
+                const typeClass = record.type === 'inbound' ? 'success' : 
+                                record.type === 'outbound' ? 'danger' : 'warning';
+                
+                html += `
+                    <tr>
+                        <td>${new Date(record.created_at).toLocaleDateString()}</td>
+                        <td><span class="tag tag-${typeClass}">${typeText}</span></td>
+                        <td>${record.product_name}</td>
+                        <td>${record.quantity}</td>
+                        <td>${record.batch_id ? '有' : '无'}</td>
+                        <td>${record.operator}</td>
+                        <td>${record.remark || record.reason || '-'}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-danger" onclick="undoTransaction(${record.id})">
+                                <i class="fas fa-undo"></i> 撤销
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        // 筛选商品
+        function filterProducts(query) {
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            displayProducts(filteredProducts);
+        }
+
+        // 按分类筛选商品
+        function filterProductsByCategory(category) {
+            if (category === 'all') {
+                displayProducts(products);
+            } else {
+                const filteredProducts = products.filter(product => 
+                    product.category === category
+                );
+                
+                displayProducts(filteredProducts);
+            }
+        }
+
+        // 筛选过期商品
+        function filterExpiredProducts(type) {
+            // 重新加载过期商品数据，显示函数会根据当前选中的标签显示相应的数据
+            loadExpiredProducts();
+        }
+
+        // 筛选记录
+        function filterRecords(type) {
+            const tbody = document.querySelector('#records-table tbody');
+            const allRecords = Array.from(tbody.querySelectorAll('tr')).filter(tr => 
+                !tr.querySelector('.empty-state')
+            );
+            
+            if (type === 'all') {
+                allRecords.forEach(tr => tr.style.display = '');
+            } else {
+                allRecords.forEach(tr => {
+                    const typeCell = tr.querySelector('td:nth-child(2)');
+                    const typeText = typeCell.textContent.trim();
+                    
+                    const expectedType = type === 'inbound' ? '入库' : 
+                                       type === 'outbound' ? '出库' : '调整';
+                    
+                    if (typeText === expectedType) {
+                        tr.style.display = '';
+                    } else {
+                        tr.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // 自动补全功能
+        function showAutocomplete(query, inputType) {
+            if (!query) {
+                hideAutocompleteList(inputType);
+                return;
+            }
+            
+            // 获取所有商品名称
+            const productNames = products.map(product => product.name);
+            
+            // 过滤匹配的商品名称
+            const matches = productNames.filter(name => 
+                name.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            // 显示自动补全列表
+            displayAutocompleteList(matches, query, inputType);
+        }
+
+        // 显示自动补全列表
+        function displayAutocompleteList(matches, query, inputType) {
+            const autocompleteList = document.getElementById(`${inputType}-autocomplete`);
+            
+            if (matches.length === 0) {
+                autocompleteList.style.display = 'none';
+                return;
+            }
+            
+            let html = '';
+            matches.forEach(match => {
+                // 高亮匹配部分
+                const startIndex = match.toLowerCase().indexOf(query.toLowerCase());
+                const endIndex = startIndex + query.length;
+                
+                const highlighted = 
+                    match.substring(0, startIndex) +
+                    `<span class="autocomplete-highlight">${match.substring(startIndex, endIndex)}</span>` +
+                    match.substring(endIndex);
+                
+                html += `<div class="autocomplete-item" data-value="${match}">${highlighted}</div>`;
+            });
+            
+            autocompleteList.innerHTML = html;
+            autocompleteList.style.display = 'block';
+            
+            // 为每个选项添加点击事件
+            autocompleteList.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    setInputValue(value, inputType);
+                    hideAutocompleteList(inputType);
+                });
+            });
+        }
+
+        // 隐藏自动补全列表
+        function hideAutocompleteList(inputType) {
+            const autocompleteList = document.getElementById(`${inputType}-autocomplete`);
+            if (autocompleteList) {
+                autocompleteList.style.display = 'none';
+            }
+        }
+
+        // 隐藏所有自动补全列表
+        function hideAllAutocompleteLists() {
+            document.querySelectorAll('.autocomplete-list').forEach(list => {
+                list.style.display = 'none';
+            });
+        }
+
+        // 设置输入框值
+        function setInputValue(value, inputType) {
+            switch(inputType) {
+                case 'product-search':
+                    document.getElementById('product-search').value = value;
+                    filterProducts(value);
+                    break;
+                case 'record-search':
+                    document.getElementById('record-search').value = value;
+                    filterRecords();
+                    break;
+                case 'new-product':
+                    document.getElementById('new-product-name').value = value;
+                    checkProductName();
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
