@@ -1903,7 +1903,7 @@
                     .from('batches')
                     .select('*')
                     .eq('product_id', productId)
-                    .order('expiry_date', { ascending: true });
+                    .order('created_at', { ascending: true }); // 按创建时间排序，最早的批次在前
                 
                 if (error) throw error;
                 
@@ -1914,7 +1914,7 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>批次ID</th>
+                                    <th>批次号</th>
                                     <th>入库日期</th>
                                     <th>有效期</th>
                                     <th>数量</th>
@@ -1934,25 +1934,32 @@
                         </tr>
                     `;
                 } else {
-                    data.forEach(batch => {
+                    // 为每个批次分配从1开始的序号
+                    data.forEach((batch, index) => {
+                        const batchNumber = index + 1;
                         const today = new Date();
-                        const expiryDate = new Date(batch.expiry_date);
-                        const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                        const expiryDate = batch.expiry_date ? new Date(batch.expiry_date) : null;
                         
                         let status = '';
                         if (batch.quantity === 0) {
                             status = '<span class="tag">已用完</span>';
-                        } else if (daysUntilExpiry < 0) {
-                            status = '<span class="tag tag-danger">已过期</span>';
-                        } else if (daysUntilExpiry <= 7) {
-                            status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
+                        } else if (!expiryDate) {
+                            // 未设置有效期
+                            status = '-';
                         } else {
-                            status = '<span class="tag tag-success">正常</span>';
+                            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                            if (daysUntilExpiry < 0) {
+                                status = '<span class="tag tag-danger">已过期</span>';
+                            } else if (daysUntilExpiry <= 7) {
+                                status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
+                            } else {
+                                status = '<span class="tag tag-success">正常</span>';
+                            }
                         }
                         
                         batchesHTML += `
                             <tr>
-                                <td>${batch.id}</td>
+                                <td>${batchNumber}</td>
                                 <td>${new Date(batch.created_at).toLocaleDateString()}</td>
                                 <td>${batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '无'}</td>
                                 <td>${batch.quantity}</td>
@@ -2028,7 +2035,7 @@
                     .select('*')
                     .eq('product_id', productId)
                     .gt('quantity', 0)
-                    .order('expiry_date', { ascending: true });
+                    .order('created_at', { ascending: true }); // 按创建时间排序，最早的批次在前
                 
                 if (error) throw error;
                 
@@ -2038,25 +2045,31 @@
                     batchSelectionHTML = '<p>该商品暂无可用批次</p>';
                     document.getElementById('batch-selection-container').style.display = 'none';
                 } else {
-                    data.forEach(batch => {
+                    data.forEach((batch, index) => {
+                        const batchNumber = index + 1;
                         const today = new Date();
-                        const expiryDate = new Date(batch.expiry_date);
-                        const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                        const expiryDate = batch.expiry_date ? new Date(batch.expiry_date) : null;
                         
                         let status = '';
-                        if (daysUntilExpiry < 0) {
-                            status = '<span class="tag tag-danger">已过期</span>';
-                        } else if (daysUntilExpiry <= 7) {
-                            status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
+                        if (!expiryDate) {
+                            // 未设置有效期
+                            status = '-';
                         } else {
-                            status = '<span class="tag tag-success">正常</span>';
+                            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                            if (daysUntilExpiry < 0) {
+                                status = '<span class="tag tag-danger">已过期</span>';
+                            } else if (daysUntilExpiry <= 7) {
+                                status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
+                            } else {
+                                status = '<span class="tag tag-success">正常</span>';
+                            }
                         }
                         
                         batchSelectionHTML += `
                             <div class="batch-option">
                                 <label>
                                     <input type="radio" name="selected-batch" value="${batch.id}" data-quantity="${batch.quantity}">
-                                    批次 ${batch.id} - 有效期: ${batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '无'} - 
+                                    批次 ${batchNumber} - 有效期: ${batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '无'} - 
                                     数量: ${batch.quantity} - ${status}
                                 </label>
                             </div>
@@ -2750,17 +2763,36 @@
                 return;
             }
             
+            // 按商品分组批次，为每个商品的批次分配序号
+            const groupedBatches = {};
+            displayData.forEach(batch => {
+                if (!groupedBatches[batch.product_id]) {
+                    groupedBatches[batch.product_id] = [];
+                }
+                groupedBatches[batch.product_id].push(batch);
+            });
+            
+            // 为每个商品的批次排序并分配序号
+            Object.keys(groupedBatches).forEach(productId => {
+                groupedBatches[productId].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            });
+            
             let html = '';
             displayData.forEach(batch => {
                 const today = new Date();
                 const expiryDate = new Date(batch.expiry_date);
                 const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
                 
+                // 获取该批次的序号
+                const productBatches = groupedBatches[batch.product_id];
+                const batchIndex = productBatches.findIndex(b => b.id === batch.id);
+                const batchNumber = batchIndex + 1;
+                
                 html += `
                     <tr>
                         <td>${batch.products.name}</td>
                         <td>${batch.products.category}</td>
-                        <td>${batch.quantity}</td>
+                        <td>批次 ${batchNumber} (数量: ${batch.quantity})</td>
                         <td>${daysUntilExpiry < 0 ? Math.abs(daysUntilExpiry) : daysUntilExpiry}天</td>
                         <td>
                             ${daysUntilExpiry < 0 ? 
