@@ -727,6 +727,56 @@
             font-weight: bold;
             color: var(--primary-color);
         }
+
+        /* 新增：可搜索下拉框样式 */
+        .searchable-select {
+            position: relative;
+        }
+
+        .searchable-select input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .searchable-select input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(106, 137, 204, 0.2);
+        }
+
+        .searchable-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .searchable-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: var(--transition);
+        }
+
+        .searchable-option:hover {
+            background-color: #f5f5f5;
+        }
+
+        .searchable-option:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
@@ -888,9 +938,11 @@
                             
                             <div class="form-group">
                                 <label class="form-label">选择商品</label>
-                                <select class="form-control" id="inbound-product-select">
-                                    <option value="">- 选择商品 -</option>
-                                </select>
+                                <!-- 改为可搜索的下拉框 -->
+                                <div class="searchable-select">
+                                    <input type="text" class="form-control" id="inbound-product-select" placeholder="搜索或选择商品..." autocomplete="off">
+                                    <div class="searchable-options" id="inbound-product-options"></div>
+                                </div>
                             </div>
                             
                             <div class="form-group">
@@ -951,9 +1003,11 @@
                             
                             <div class="form-group">
                                 <label class="form-label">选择商品</label>
-                                <select class="form-control" id="outbound-product-select">
-                                    <option value="">- 选择商品 -</option>
-                                </select>
+                                <!-- 改为可搜索的下拉框 -->
+                                <div class="searchable-select">
+                                    <input type="text" class="form-control" id="outbound-product-select" placeholder="搜索或选择商品..." autocomplete="off">
+                                    <div class="searchable-options" id="outbound-product-options"></div>
+                                </div>
                             </div>
                             
                             <div class="form-group" id="batch-selection-container" style="display: none;">
@@ -1026,7 +1080,7 @@
                             
                             <div class="filter-group">
                                 <button class="filter-btn active" data-type="expired">已过期商品</button>
-                                <button class="filter-btn" data-type="expiring">即将过期商品</button>
+                                <button class="filter-btn" data-type="expiring">即将过期商品(30天内)</button>
                             </div>
                             
                             <div class="table-container">
@@ -1425,20 +1479,13 @@
             });
 
             // 入库商品选择
-            document.getElementById('inbound-product-select').addEventListener('change', function() {
-                // 重置表单
-                document.getElementById('inbound-quantity').value = '1';
-                document.getElementById('inbound-remark').value = '';
+            document.getElementById('inbound-product-select').addEventListener('input', function() {
+                showSearchableOptions(this.value, 'inbound');
             });
 
             // 出库商品选择
-            document.getElementById('outbound-product-select').addEventListener('change', function() {
-                const productId = this.value;
-                if (productId) {
-                    showBatchSelection(productId);
-                } else {
-                    document.getElementById('batch-selection-container').style.display = 'none';
-                }
+            document.getElementById('outbound-product-select').addEventListener('input', function() {
+                showSearchableOptions(this.value, 'outbound');
             });
 
             // 分类筛选
@@ -1487,6 +1534,11 @@
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.autocomplete-container')) {
                     hideAllAutocompleteLists();
+                }
+                
+                // 隐藏可搜索下拉框的选项列表
+                if (!e.target.closest('.searchable-select')) {
+                    hideAllSearchableOptions();
                 }
             });
         }
@@ -1950,7 +2002,7 @@
                             const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
                             if (daysUntilExpiry < 0) {
                                 status = '<span class="tag tag-danger">已过期</span>';
-                            } else if (daysUntilExpiry <= 7) {
+                            } else if (daysUntilExpiry <= 30) {
                                 status = `<span class="tag tag-warning">${daysUntilExpiry}天后过期</span>`;
                             } else {
                                 status = '<span class="tag tag-success">正常</span>';
@@ -2012,18 +2064,80 @@
 
         // 显示商品选择下拉框
         function displayProductSelects(products) {
-            // 填充入库商品选择
-            const inboundSelect = document.getElementById('inbound-product-select');
-            inboundSelect.innerHTML = '<option value="">- 选择商品 -</option>';
+            // 不再需要填充传统的select元素，因为我们改用可搜索的下拉框
+            // 但我们需要在页面加载时初始化可搜索下拉框的选项
+            initializeSearchableSelects();
+        }
+
+        // 初始化可搜索下拉框
+        function initializeSearchableSelects() {
+            // 入库商品选择
+            const inboundOptions = document.getElementById('inbound-product-options');
+            inboundOptions.innerHTML = '';
+            
+            // 出库商品选择
+            const outboundOptions = document.getElementById('outbound-product-options');
+            outboundOptions.innerHTML = '';
+            
             products.forEach(product => {
-                inboundSelect.innerHTML += `<option value="${product.id}">${product.name}</option>`;
+                // 入库选项
+                const inboundOption = document.createElement('div');
+                inboundOption.className = 'searchable-option';
+                inboundOption.textContent = product.name;
+                inboundOption.setAttribute('data-value', product.id);
+                inboundOption.addEventListener('click', function() {
+                    document.getElementById('inbound-product-select').value = product.name;
+                    inboundOptions.style.display = 'none';
+                });
+                inboundOptions.appendChild(inboundOption);
+                
+                // 出库选项
+                const outboundOption = document.createElement('div');
+                outboundOption.className = 'searchable-option';
+                outboundOption.textContent = product.name;
+                outboundOption.setAttribute('data-value', product.id);
+                outboundOption.addEventListener('click', function() {
+                    document.getElementById('outbound-product-select').value = product.name;
+                    outboundOptions.style.display = 'none';
+                    // 选择商品后显示批次选择
+                    showBatchSelection(product.id);
+                });
+                outboundOptions.appendChild(outboundOption);
+            });
+        }
+
+        // 显示可搜索下拉框的选项
+        function showSearchableOptions(query, type) {
+            const optionsContainer = document.getElementById(`${type}-product-options`);
+            const options = optionsContainer.querySelectorAll('.searchable-option');
+            
+            if (!query) {
+                optionsContainer.style.display = 'none';
+                return;
+            }
+            
+            let hasMatches = false;
+            options.forEach(option => {
+                const productName = option.textContent.toLowerCase();
+                if (productName.includes(query.toLowerCase())) {
+                    option.style.display = 'block';
+                    hasMatches = true;
+                } else {
+                    option.style.display = 'none';
+                }
             });
             
-            // 填充出库商品选择
-            const outboundSelect = document.getElementById('outbound-product-select');
-            outboundSelect.innerHTML = '<option value="">- 选择商品 -</option>';
-            products.forEach(product => {
-                outboundSelect.innerHTML += `<option value="${product.id}">${product.name}</option>`;
+            if (hasMatches) {
+                optionsContainer.style.display = 'block';
+            } else {
+                optionsContainer.style.display = 'none';
+            }
+        }
+
+        // 隐藏所有可搜索下拉框的选项
+        function hideAllSearchableOptions() {
+            document.querySelectorAll('.searchable-options').forEach(container => {
+                container.style.display = 'none';
             });
         }
 
@@ -2299,22 +2413,25 @@
 
         // 确认入库
         async function confirmInbound() {
-            const productId = document.getElementById('inbound-product-select').value;
+            const productName = document.getElementById('inbound-product-select').value;
             const quantity = parseInt(document.getElementById('inbound-quantity').value);
             const expiryDate = document.getElementById('inbound-expiry').value;
             const remark = document.getElementById('inbound-remark').value;
             
             // 验证输入
-            if (!productId) {
+            if (!productName) {
                 showNotification('请选择商品', 'error');
                 return;
             }
             
-            const product = products.find(p => p.id == productId);
+            // 通过商品名称查找商品ID
+            const product = products.find(p => p.name === productName);
             if (!product) {
                 showNotification('商品不存在', 'error');
                 return;
             }
+            
+            const productId = product.id;
             
             if (isNaN(quantity) || quantity <= 0) {
                 showNotification('请输入有效的入库数量', 'error');
@@ -2387,14 +2504,14 @@
 
         // 确认出库
         async function confirmOutbound() {
-            const productId = document.getElementById('outbound-product-select').value;
+            const productName = document.getElementById('outbound-product-select').value;
             const selectedBatch = document.querySelector('input[name="selected-batch"]:checked');
             const quantity = parseInt(document.getElementById('outbound-quantity').value);
             const reason = document.getElementById('outbound-reason').value;
             const remark = document.getElementById('outbound-remark').value;
             
             // 验证输入
-            if (!productId) {
+            if (!productName) {
                 showNotification('请选择商品', 'error');
                 return;
             }
@@ -2417,11 +2534,14 @@
                 return;
             }
             
-            const product = products.find(p => p.id == productId);
+            // 通过商品名称查找商品ID
+            const product = products.find(p => p.name === productName);
             if (!product) {
                 showNotification('商品不存在', 'error');
                 return;
             }
+            
+            const productId = product.id;
             
             try {
                 // 更新批次数量
@@ -2708,10 +2828,10 @@
                 
                 if (expiredError) throw expiredError;
                 
-                // 获取即将过期商品（7天内）
-                const nextWeek = new Date();
-                nextWeek.setDate(nextWeek.getDate() + 7);
-                const nextWeekFormatted = nextWeek.toISOString().split('T')[0];
+                // 获取即将过期商品（30天内）
+                const nextMonth = new Date();
+                nextMonth.setDate(nextMonth.getDate() + 30);
+                const nextMonthFormatted = nextMonth.toISOString().split('T')[0];
                 
                 const { data: expiringData, error: expiringError } = await supabaseClient
                     .from('batches')
@@ -2723,7 +2843,7 @@
                         )
                     `)
                     .gte('expiry_date', today)
-                    .lte('expiry_date', nextWeekFormatted)
+                    .lte('expiry_date', nextMonthFormatted)
                     .gt('quantity', 0);
                 
                 if (expiringError) throw expiringError;
@@ -2788,12 +2908,16 @@
                 const batchIndex = productBatches.findIndex(b => b.id === batch.id);
                 const batchNumber = batchIndex + 1;
                 
+                const statusText = daysUntilExpiry < 0 ? 
+                    `已过期 ${Math.abs(daysUntilExpiry)} 天` : 
+                    `剩余 ${daysUntilExpiry} 天`;
+
                 html += `
                     <tr>
                         <td>${batch.products.name}</td>
                         <td>${batch.products.category}</td>
-                        <td>批次 ${batchNumber} (数量: ${batch.quantity})</td>
-                        <td>${daysUntilExpiry < 0 ? Math.abs(daysUntilExpiry) : daysUntilExpiry}天</td>
+                        <td>批次 ${batchNumber}（数量：${batch.quantity}）</td>
+                        <td>${statusText}</td>
                         <td>
                             ${daysUntilExpiry < 0 ? 
                                 `<button class="btn btn-sm btn-danger" onclick="showDestroyConfirm(${batch.id}, '${batch.products.name}', ${batch.quantity})">
