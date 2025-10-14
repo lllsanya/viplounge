@@ -380,6 +380,14 @@
             background-color: #e6a336;
         }
 
+        .btn-info {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-info:hover {
+            background-color: #6bc2d4;
+        }
+
         /* 表单样式 */
         .form-group {
             margin-bottom: 20px;
@@ -505,6 +513,11 @@
         .tag-success {
             background-color: rgba(120, 224, 143, 0.2);
             color: var(--success-color);
+        }
+
+        .tag-info {
+            background-color: rgba(130, 204, 221, 0.2);
+            color: var(--secondary-color);
         }
 
         /* 搜索和筛选 */
@@ -728,7 +741,7 @@
             color: var(--primary-color);
         }
 
-        /* 新增：可搜索下拉框样式 */
+        /* 可搜索下拉框样式 */
         .searchable-select {
             position: relative;
         }
@@ -1054,12 +1067,13 @@
                                             <th>数量</th>
                                             <th>操作员工</th>
                                             <th>原因</th>
+                                            <th>备注</th>
                                             <th>操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td colspan="6" class="empty-state">
+                                            <td colspan="7" class="empty-state">
                                                 <i class="fas fa-history"></i>
                                                 <p>暂无出库记录</p>
                                             </td>
@@ -1281,6 +1295,68 @@
             </div>
         </div>
 
+        <!-- 模态框 - 编辑入库记录 -->
+        <div id="edit-inbound-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">编辑入库记录</div>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-inbound-id">
+                    <input type="hidden" id="edit-inbound-batch-id">
+                    <div class="form-group">
+                        <label class="form-label">入库数量</label>
+                        <input type="number" class="form-control" id="edit-inbound-quantity" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注</label>
+                        <textarea class="form-control" id="edit-inbound-remark" rows="3" placeholder="请输入备注"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="cancel-edit-inbound">取消</button>
+                    <button class="btn btn-success" id="update-inbound">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 - 编辑出库记录 -->
+        <div id="edit-outbound-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">编辑出库记录</div>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-outbound-id">
+                    <input type="hidden" id="edit-outbound-batch-id">
+                    <input type="hidden" id="edit-outbound-original-quantity">
+                    <div class="form-group">
+                        <label class="form-label">出库数量</label>
+                        <input type="number" class="form-control" id="edit-outbound-quantity" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">出库原因</label>
+                        <select class="form-control" id="edit-outbound-reason">
+                            <option value="销售">销售</option>
+                            <option value="调拨">调拨</option>
+                            <option value="损耗">损耗</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注</label>
+                        <textarea class="form-control" id="edit-outbound-remark" rows="3" placeholder="请输入备注"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="cancel-edit-outbound">取消</button>
+                    <button class="btn btn-success" id="update-outbound">更新</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 通知 -->
         <div id="notification" class="notification">
             <i class="fas fa-check-circle"></i>
@@ -1470,7 +1546,6 @@
             // 记录搜索
             document.getElementById('record-search').addEventListener('input', function() {
                 filterRecords();
-                showAutocomplete(this.value, 'record-search');
             });
 
             // 添加商品名称自动补全
@@ -1541,6 +1616,20 @@
                     hideAllSearchableOptions();
                 }
             });
+
+            // 编辑入库记录相关事件
+            document.getElementById('cancel-edit-inbound').addEventListener('click', function() {
+                document.getElementById('edit-inbound-modal').style.display = 'none';
+            });
+
+            document.getElementById('update-inbound').addEventListener('click', updateInboundRecord);
+
+            // 编辑出库记录相关事件
+            document.getElementById('cancel-edit-outbound').addEventListener('click', function() {
+                document.getElementById('edit-outbound-modal').style.display = 'none';
+            });
+
+            document.getElementById('update-outbound').addEventListener('click', updateOutboundRecord);
         }
 
         // 处理登录
@@ -1776,13 +1865,16 @@
                 let activitiesHTML = '';
                 transactions.forEach(transaction => {
                     const typeText = transaction.type === 'inbound' ? '入库' : 
-                                   transaction.type === 'outbound' ? '出库' : '调整';
+                                   transaction.type === 'outbound' ? '出库' : 
+                                   transaction.type === 'adjustment' ? '库存调整' : '未知';
                     const date = new Date(transaction.created_at).toLocaleString();
-                    const typeClass = transaction.type === 'inbound' ? 'success' : 'danger';
+                    const typeClass = transaction.type === 'inbound' ? 'success' : 
+                                    transaction.type === 'outbound' ? 'danger' : 
+                                    transaction.type === 'adjustment' ? 'info' : 'warning';
                     
                     activitiesHTML += `
                         <div class="activity-item" style="padding: 10px; border-left: 4px solid var(--${typeClass}-color); margin-bottom: 10px; background-color: rgba(120, 224, 143, 0.1);">
-                            <i class="fas fa-${transaction.type === 'inbound' ? 'arrow-down' : 'arrow-up'} ${typeClass}"></i>
+                            <i class="fas fa-${transaction.type === 'inbound' ? 'arrow-down' : transaction.type === 'outbound' ? 'arrow-up' : 'exchange-alt'} ${typeClass}"></i>
                             <span>${date} - ${transaction.product_name} ${typeText} ${transaction.quantity}件</span>
                         </div>
                     `;
@@ -2659,6 +2751,9 @@
                         <td>${record.operator}</td>
                         <td>${record.remark || '-'}</td>
                         <td class="action-buttons">
+                            <button class="btn btn-sm btn-info" onclick="editInboundRecord(${record.id})">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
                             <button class="btn btn-sm btn-danger" onclick="undoTransaction(${record.id})">
                                 <i class="fas fa-undo"></i> 撤销
                             </button>
@@ -2668,6 +2763,121 @@
             });
             
             tbody.innerHTML = html;
+        }
+
+        // 编辑入库记录
+        async function editInboundRecord(recordId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('id', recordId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // 填充表单
+                document.getElementById('edit-inbound-id').value = data.id;
+                document.getElementById('edit-inbound-batch-id').value = data.batch_id;
+                document.getElementById('edit-inbound-quantity').value = data.quantity;
+                document.getElementById('edit-inbound-remark').value = data.remark || '';
+                
+                // 显示模态框
+                document.getElementById('edit-inbound-modal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('加载入库记录错误:', error);
+                showNotification('加载入库记录失败', 'error');
+            }
+        }
+
+        // 更新入库记录
+        async function updateInboundRecord() {
+            const id = document.getElementById('edit-inbound-id').value;
+            const batchId = document.getElementById('edit-inbound-batch-id').value;
+            const quantity = parseInt(document.getElementById('edit-inbound-quantity').value);
+            const remark = document.getElementById('edit-inbound-remark').value;
+            
+            if (isNaN(quantity) || quantity <= 0) {
+                showNotification('请输入有效的入库数量', 'error');
+                return;
+            }
+            
+            try {
+                // 获取原始记录以比较数量变化
+                const { data: originalRecord, error: fetchError } = await supabaseClient
+                    .from('transactions')
+                    .select('quantity')
+                    .eq('id', id)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                const originalQuantity = originalRecord.quantity;
+                const quantityDifference = quantity - originalQuantity;
+                
+                // 更新批次数量
+                const { data: batchData, error: batchError } = await supabaseClient
+                    .from('batches')
+                    .select('quantity')
+                    .eq('id', batchId)
+                    .single();
+                
+                if (batchError) throw batchError;
+                
+                const newBatchQuantity = batchData.quantity + quantityDifference;
+                
+                if (newBatchQuantity < 0) {
+                    showNotification('调整后的批次数量不能为负数', 'error');
+                    return;
+                }
+                
+                const { error: updateBatchError } = await supabaseClient
+                    .from('batches')
+                    .update({ quantity: newBatchQuantity })
+                    .eq('id', batchId);
+                
+                if (updateBatchError) throw updateBatchError;
+                
+                // 更新入库记录
+                const { error } = await supabaseClient
+                    .from('transactions')
+                    .update({ 
+                        quantity: quantity,
+                        remark: remark 
+                    })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                // 关闭模态框
+                document.getElementById('edit-inbound-modal').style.display = 'none';
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('入库记录更新成功');
+                
+                // 重新加载入库记录
+                if (currentPage === 'inbound') {
+                    loadInboundRecords();
+                }
+                
+                // 重新加载操作记录
+                if (currentPage === 'records') {
+                    loadRecords();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('更新入库记录错误:', error);
+                showNotification('更新入库记录失败', 'error');
+            }
         }
 
         // 加载出库记录
@@ -2696,7 +2906,7 @@
             if (records.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="empty-state">
+                        <td colspan="7" class="empty-state">
                             <i class="fas fa-history"></i>
                             <p>暂无出库记录</p>
                         </td>
@@ -2714,7 +2924,11 @@
                         <td>${record.quantity}</td>
                         <td>${record.operator}</td>
                         <td>${record.reason}</td>
+                        <td>${record.remark || '-'}</td>
                         <td class="action-buttons">
+                            <button class="btn btn-sm btn-info" onclick="editOutboundRecord(${record.id})">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
                             <button class="btn btn-sm btn-danger" onclick="undoTransaction(${record.id})">
                                 <i class="fas fa-undo"></i> 撤销
                             </button>
@@ -2724,6 +2938,117 @@
             });
             
             tbody.innerHTML = html;
+        }
+
+        // 编辑出库记录
+        async function editOutboundRecord(recordId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('id', recordId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // 填充表单
+                document.getElementById('edit-outbound-id').value = data.id;
+                document.getElementById('edit-outbound-batch-id').value = data.batch_id;
+                document.getElementById('edit-outbound-quantity').value = data.quantity;
+                document.getElementById('edit-outbound-original-quantity').value = data.quantity;
+                document.getElementById('edit-outbound-reason').value = data.reason || '其他';
+                document.getElementById('edit-outbound-remark').value = data.remark || '';
+                
+                // 显示模态框
+                document.getElementById('edit-outbound-modal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('加载出库记录错误:', error);
+                showNotification('加载出库记录失败', 'error');
+            }
+        }
+
+        // 更新出库记录
+        async function updateOutboundRecord() {
+            const id = document.getElementById('edit-outbound-id').value;
+            const batchId = document.getElementById('edit-outbound-batch-id').value;
+            const quantity = parseInt(document.getElementById('edit-outbound-quantity').value);
+            const originalQuantity = parseInt(document.getElementById('edit-outbound-original-quantity').value);
+            const reason = document.getElementById('edit-outbound-reason').value;
+            const remark = document.getElementById('edit-outbound-remark').value;
+            
+            if (isNaN(quantity) || quantity <= 0) {
+                showNotification('请输入有效的出库数量', 'error');
+                return;
+            }
+            
+            try {
+                // 获取批次当前数量
+                const { data: batchData, error: batchError } = await supabaseClient
+                    .from('batches')
+                    .select('quantity')
+                    .eq('id', batchId)
+                    .single();
+                
+                if (batchError) throw batchError;
+                
+                const currentBatchQuantity = batchData.quantity;
+                const quantityDifference = originalQuantity - quantity;
+                const newBatchQuantity = currentBatchQuantity + quantityDifference;
+                
+                if (newBatchQuantity < 0) {
+                    showNotification('调整后的批次数量不能为负数', 'error');
+                    return;
+                }
+                
+                // 更新批次数量
+                const { error: updateBatchError } = await supabaseClient
+                    .from('batches')
+                    .update({ quantity: newBatchQuantity })
+                    .eq('id', batchId);
+                
+                if (updateBatchError) throw updateBatchError;
+                
+                // 更新出库记录
+                const { error } = await supabaseClient
+                    .from('transactions')
+                    .update({ 
+                        quantity: quantity,
+                        reason: reason,
+                        remark: remark 
+                    })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                // 关闭模态框
+                document.getElementById('edit-outbound-modal').style.display = 'none';
+                
+                // 清除缓存
+                dataCache.products = null;
+                dataCache.batches = null;
+                dataCache.transactions = null;
+                
+                // 显示成功消息
+                showNotification('出库记录更新成功');
+                
+                // 重新加载出库记录
+                if (currentPage === 'outbound') {
+                    loadOutboundRecords();
+                }
+                
+                // 重新加载操作记录
+                if (currentPage === 'records') {
+                    loadRecords();
+                }
+                
+                // 更新仪表板数据
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('更新出库记录错误:', error);
+                showNotification('更新出库记录失败', 'error');
+            }
         }
 
         // 撤销交易
@@ -3132,10 +3457,18 @@
             let html = '';
             records.forEach(record => {
                 const typeText = record.type === 'inbound' ? '入库' : 
-                               record.type === 'outbound' ? '出库' : '调整';
+                               record.type === 'outbound' ? '出库' : 
+                               record.type === 'adjustment' ? '库存调整' : '未知';
                                
                 const typeClass = record.type === 'inbound' ? 'success' : 
-                                record.type === 'outbound' ? 'danger' : 'warning';
+                                record.type === 'outbound' ? 'danger' : 
+                                record.type === 'adjustment' ? 'info' : 'warning';
+                
+                // 显示详细信息
+                let details = record.remark || record.reason || '-';
+                if (record.type === 'outbound' && record.reason) {
+                    details = `原因: ${record.reason}${record.remark ? `, 备注: ${record.remark}` : ''}`;
+                }
                 
                 html += `
                     <tr>
@@ -3145,7 +3478,7 @@
                         <td>${record.quantity}</td>
                         <td>${record.batch_id ? '有' : '无'}</td>
                         <td>${record.operator}</td>
-                        <td>${record.remark || record.reason || '-'}</td>
+                        <td>${details}</td>
                         <td class="action-buttons">
                             <button class="btn btn-sm btn-danger" onclick="undoTransaction(${record.id})">
                                 <i class="fas fa-undo"></i> 撤销
@@ -3188,28 +3521,31 @@
 
         // 筛选记录
         function filterRecords(type) {
+            const searchQuery = document.getElementById('record-search').value.toLowerCase();
+            const activeType = type || document.querySelector('.filter-btn[data-type].active').getAttribute('data-type');
+            
             const tbody = document.querySelector('#records-table tbody');
-            const allRecords = Array.from(tbody.querySelectorAll('tr')).filter(tr => 
+            const allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => 
                 !tr.querySelector('.empty-state')
             );
             
-            if (type === 'all') {
-                allRecords.forEach(tr => tr.style.display = '');
-            } else {
-                allRecords.forEach(tr => {
-                    const typeCell = tr.querySelector('td:nth-child(2)');
-                    const typeText = typeCell.textContent.trim();
-                    
-                    const expectedType = type === 'inbound' ? '入库' : 
-                                       type === 'outbound' ? '出库' : '调整';
-                    
-                    if (typeText === expectedType) {
-                        tr.style.display = '';
-                    } else {
-                        tr.style.display = 'none';
-                    }
-                });
-            }
+            allRows.forEach(tr => {
+                const productName = tr.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                const recordType = tr.querySelector('td:nth-child(2) span').textContent;
+                
+                const typeMatch = activeType === 'all' || 
+                    (activeType === 'inbound' && recordType === '入库') ||
+                    (activeType === 'outbound' && recordType === '出库') ||
+                    (activeType === 'adjustment' && recordType === '库存调整');
+                
+                const searchMatch = !searchQuery || productName.includes(searchQuery);
+                
+                if (typeMatch && searchMatch) {
+                    tr.style.display = '';
+                } else {
+                    tr.style.display = 'none';
+                }
+            });
         }
 
         // 自动补全功能
