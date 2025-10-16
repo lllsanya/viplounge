@@ -1310,6 +1310,10 @@
                         <input type="number" class="form-control" id="edit-inbound-quantity" min="1" value="1">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">有效期至</label>
+                        <input type="date" class="form-control" id="edit-inbound-expiry">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">备注</label>
                         <textarea class="form-control" id="edit-inbound-remark" rows="3" placeholder="请输入备注"></textarea>
                     </div>
@@ -2531,19 +2535,62 @@
             }
             
             try {
-                // 创建批次
-                const { data: batchData, error: batchError } = await supabaseClient
-                    .from('batches')
-                    .insert([
-                        {
-                            product_id: productId,
-                            quantity: quantity,
-                            expiry_date: expiryDate || null
-                        }
-                    ])
-                    .select();
+                // 检查是否存在相同商品和相同有效期的批次
+                let existingBatchId = null;
+                if (expiryDate) {
+                    const { data: existingBatches, error: checkError } = await supabaseClient
+                        .from('batches')
+                        .select('id, quantity')
+                        .eq('product_id', productId)
+                        .eq('expiry_date', expiryDate)
+                        .gt('quantity', 0);
+                    
+                    if (checkError) throw checkError;
+                    
+                    if (existingBatches && existingBatches.length > 0) {
+                        existingBatchId = existingBatches[0].id;
+                    }
+                }
                 
-                if (batchError) throw batchError;
+                let batchId;
+                
+                if (existingBatchId) {
+                    // 更新现有批次数量
+                    const { data: batchData, error: batchError } = await supabaseClient
+                        .from('batches')
+                        .select('quantity')
+                        .eq('id', existingBatchId)
+                        .single();
+                    
+                    if (batchError) throw batchError;
+                    
+                    const newQuantity = batchData.quantity + quantity;
+                    
+                    const { error: updateError } = await supabaseClient
+                        .from('batches')
+                        .update({ quantity: newQuantity })
+                        .eq('id', existingBatchId);
+                    
+                    if (updateError) throw updateError;
+                    
+                    batchId = existingBatchId;
+                } else {
+                    // 创建新批次
+                    const { data: batchData, error: batchError } = await supabaseClient
+                        .from('batches')
+                        .insert([
+                            {
+                                product_id: productId,
+                                quantity: quantity,
+                                expiry_date: expiryDate || null
+                            }
+                        ])
+                        .select();
+                    
+                    if (batchError) throw batchError;
+                    
+                    batchId = batchData[0].id;
+                }
                 
                 // 创建入库记录
                 const { error: transactionError } = await supabaseClient
@@ -2553,10 +2600,10 @@
                             type: 'inbound',
                             product_id: productId,
                             product_name: product.name,
-                            batch_id: batchData[0].id,
+                            batch_id: batchId,
                             quantity: quantity,
                             operator: currentUser.name,
-                            remark: remark
+                            remark: existingBatchId ? `入库已合并到现有批次${remark ? '，' + remark : ''}` : remark
                         }
                     ]);
                 
@@ -2573,7 +2620,11 @@
                 dataCache.transactions = null;
                 
                 // 显示成功消息
-                showNotification('入库操作成功');
+                if (existingBatchId) {
+                    showNotification('入库操作成功，已合并到现有批次');
+                } else {
+                    showNotification('入库操作成功');
+                }
                 
                 // 重新加载入库记录
                 if (currentPage === 'inbound') {
@@ -2608,24 +2659,6 @@
                 return;
             }
             
-            if (!selectedBatch) {
-                showNotification('请选择批次', 'error');
-                return;
-            }
-            
-            const batchId = selectedBatch.value;
-            const batchQuantity = parseInt(selectedBatch.getAttribute('data-quantity'));
-            
-            if (isNaN(quantity) || quantity <= 0) {
-                showNotification('请输入有效的出库数量', 'error');
-                return;
-            }
-            
-            if (quantity > batchQuantity) {
-                showNotification('出库数量不能超过批次库存数量', 'error');
-                return;
-            }
-            
             // 通过商品名称查找商品ID
             const product = products.find(p => p.name === productName);
             if (!product) {
@@ -2635,33 +2668,85 @@
             
             const productId = product.id;
             
+            if (isNaN(quantity) || quantity <= 0) {
+                showNotification('请输入有效的出库数量', 'error');
+                return;
+            }
+            
             try {
-                // 更新批次数量
-                const newQuantity = batchQuantity - quantity;
-                const { error: batchError } = await supabaseClient
+                // 获取所有可用批次（按创建时间排序，最早的在前）
+                const { data: allBatches, error: batchesError } = await supabaseClient
                     .from('batches')
-                    .update({ quantity: newQuantity })
-                    .eq('id', batchId);
+                    .select('*')
+                    .eq('product_id', productId)
+                    .gt('quantity', 0)
+                    .order('created_at', { ascending: true });
                 
-                if (batchError) throw batchError;
+                if (batchesError) throw batchesError;
+                
+                if (allBatches.length === 0) {
+                    showNotification('该商品没有可用批次', 'error');
+                    return;
+                }
+                
+                let remainingQuantity = quantity;
+                const batchTransactions = [];
+                
+                // 遍历所有批次，按FIFO原则扣除
+                for (const batch of allBatches) {
+                    if (remainingQuantity <= 0) break;
+                    
+                    const deductQuantity = Math.min(batch.quantity, remainingQuantity);
+                    const newBatchQuantity = batch.quantity - deductQuantity;
+                    
+                    // 更新批次数量
+                    const { error: updateError } = await supabaseClient
+                        .from('batches')
+                        .update({ quantity: newBatchQuantity })
+                        .eq('id', batch.id);
+                    
+                    if (updateError) throw updateError;
+                    
+                    // 记录交易
+                    batchTransactions.push({
+                        type: 'outbound',
+                        product_id: productId,
+                        product_name: product.name,
+                        batch_id: batch.id,
+                        quantity: deductQuantity,
+                        operator: currentUser.name,
+                        reason: reason,
+                        remark: allBatches.length > 1 ? 
+                               `多批次出库，本次从批次${allBatches.indexOf(batch) + 1}扣除${deductQuantity}件${remark ? '，' + remark : ''}` : 
+                               remark
+                    });
+                    
+                    remainingQuantity -= deductQuantity;
+                }
+                
+                // 如果还有剩余数量无法满足
+                if (remainingQuantity > 0) {
+                    showNotification(`库存不足，只能出库${quantity - remainingQuantity}件`, 'warning');
+                    // 回滚已扣除的批次
+                    for (const transaction of batchTransactions) {
+                        const { error: rollbackError } = await supabaseClient
+                            .from('batches')
+                            .update({ quantity: batch => `quantity + ${transaction.quantity}` })
+                            .eq('id', transaction.batch_id);
+                        
+                        if (rollbackError) throw rollbackError;
+                    }
+                    return;
+                }
                 
                 // 创建出库记录
-                const { error: transactionError } = await supabaseClient
-                    .from('transactions')
-                    .insert([
-                        {
-                            type: 'outbound',
-                            product_id: productId,
-                            product_name: product.name,
-                            batch_id: batchId,
-                            quantity: quantity,
-                            operator: currentUser.name,
-                            reason: reason,
-                            remark: remark
-                        }
-                    ]);
-                
-                if (transactionError) throw transactionError;
+                for (const transaction of batchTransactions) {
+                    const { error: transactionError } = await supabaseClient
+                        .from('transactions')
+                        .insert([transaction]);
+                    
+                    if (transactionError) throw transactionError;
+                }
                 
                 // 重置表单
                 document.getElementById('outbound-product-select').value = '';
@@ -2675,7 +2760,11 @@
                 dataCache.transactions = null;
                 
                 // 显示成功消息
-                showNotification('出库操作成功');
+                if (batchTransactions.length > 1) {
+                    showNotification(`出库操作成功，已从${batchTransactions.length}个批次中扣除`);
+                } else {
+                    showNotification('出库操作成功');
+                }
                 
                 // 重新加载出库记录
                 if (currentPage === 'outbound') {
@@ -2770,7 +2859,12 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('transactions')
-                    .select('*')
+                    .select(`
+                        *,
+                        batches!inner (
+                            expiry_date
+                        )
+                    `)
                     .eq('id', recordId)
                     .single();
                 
@@ -2780,6 +2874,7 @@
                 document.getElementById('edit-inbound-id').value = data.id;
                 document.getElementById('edit-inbound-batch-id').value = data.batch_id;
                 document.getElementById('edit-inbound-quantity').value = data.quantity;
+                document.getElementById('edit-inbound-expiry').value = data.batches.expiry_date || '';
                 document.getElementById('edit-inbound-remark').value = data.remark || '';
                 
                 // 显示模态框
@@ -2796,6 +2891,7 @@
             const id = document.getElementById('edit-inbound-id').value;
             const batchId = document.getElementById('edit-inbound-batch-id').value;
             const quantity = parseInt(document.getElementById('edit-inbound-quantity').value);
+            const expiryDate = document.getElementById('edit-inbound-expiry').value;
             const remark = document.getElementById('edit-inbound-remark').value;
             
             if (isNaN(quantity) || quantity <= 0) {
@@ -2816,7 +2912,7 @@
                 const originalQuantity = originalRecord.quantity;
                 const quantityDifference = quantity - originalQuantity;
                 
-                // 更新批次数量
+                // 更新批次数量和有效期
                 const { data: batchData, error: batchError } = await supabaseClient
                     .from('batches')
                     .select('quantity')
@@ -2834,7 +2930,10 @@
                 
                 const { error: updateBatchError } = await supabaseClient
                     .from('batches')
-                    .update({ quantity: newBatchQuantity })
+                    .update({ 
+                        quantity: newBatchQuantity,
+                        expiry_date: expiryDate || null
+                    })
                     .eq('id', batchId);
                 
                 if (updateBatchError) throw updateBatchError;
